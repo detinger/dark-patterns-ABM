@@ -240,14 +240,21 @@ class UserAgent(mesa.Agent):
         return self.negative_wom
 
     def spread_negative_wom(
-        self, graph, social_influence_strength: float
+        self, graph, social_influence_strength: float, *, force: bool = False,
     ) -> list[dict]:
         """Spread negative word-of-mouth to active neighbours.
 
         Returns a list of ``{source, target, intensity}`` edge dicts.
+
+        Parameters
+        ----------
+        force : bool
+            If ``True``, skip the ``self.active`` check.  Used for exit WOM
+            where the agent has just churned but still broadcasts a final
+            negative signal.
         """
         edges: list[dict] = []
-        if not self.active or self.network_id is None:
+        if (not force and not self.active) or self.network_id is None:
             return edges
 
         rng = self.model.random

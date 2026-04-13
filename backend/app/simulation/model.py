@@ -325,10 +325,10 @@ class DarkPatternTrustModel(mesa.Model):
                 self._step_churns += 1
                 if user.network_id is not None:
                     churned_nodes.append(user.network_id)
-                # Exit WOM for high-harm churners
+                # Exit WOM for high-harm churners (force=True bypasses active check)
                 if user.harm >= EXIT_WOM_HARM_THRESHOLD:
                     edges = user.spread_negative_wom(
-                        self.graph, self.social_influence_strength
+                        self.graph, self.social_influence_strength, force=True
                     )
                     social_edges.extend(edges)
                     self._step_negative_wom += len(edges)
