@@ -21,6 +21,7 @@ export interface SimulationCreateRequest {
 export interface Metrics {
   active_users: number
   mean_trust: number
+  mean_trust_all: number
   mean_harm: number
   churn_rate: number
   cumulative_churn: number
@@ -28,6 +29,19 @@ export interface Metrics {
   negative_wom_rate: number
   short_term_revenue: number
   long_term_revenue: number
+  step_churns: number
+  step_negative_wom_count: number
+  step_positive_wom_count: number
+  step_revenue: number
+  step_costs: number
+  step_profit: number
+  cumulative_revenue: number
+  cumulative_costs: number
+  net_value: number
+  platform_reputation: number
+  avg_trust_skeptic: number
+  avg_trust_naive: number
+  avg_trust_activist: number
 }
 
 export interface NetworkNode {
