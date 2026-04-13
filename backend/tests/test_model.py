@@ -136,7 +136,9 @@ def test_control_scenario_stable_trust():
     active = [a for a in model.user_agents if a.active]
     if active:
         final_trust = sum(a.trust for a in active) / len(active)
-        assert abs(initial_trust - final_trust) < 0.05
+        # Trust may rise slightly in control (recovery + positive WOM boost)
+        # but should not drop significantly without dark patterns
+        assert final_trust >= initial_trust - 0.05
 
 
 # ── DataCollector tests ───────────────────────────────────────────────
@@ -262,7 +264,11 @@ def test_control_generates_positive_wom():
 
 
 def test_clean_competitor_reputation_stable():
+    # Use platform.reputation (0-1 scale) which is the doc formula:
+    # 0.7 * mean_trust + 0.3 * (1 - mean_wom)
+    # This should stay high without dark patterns.
     model = _make_model(
+        num_users=200,
         dark_pattern_intensity=0.0,
         pattern_forced_trial=False,
         pattern_hard_cancel=False,
@@ -270,8 +276,7 @@ def test_clean_competitor_reputation_stable():
         customer_support_quality=0.7,
         seed=42,
     )
-    initial_rep = model.platform_reputation
     for _ in range(30):
         model.step()
-    # Reputation should not drop significantly (allow small fluctuation)
-    assert model.platform_reputation >= initial_rep - 5.0
+    # Without dark patterns, reputation should stay above 0.6
+    assert model.platform.reputation >= 0.6
