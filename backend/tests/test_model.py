@@ -226,6 +226,7 @@ def test_high_intensity_more_negative_wom():
 
 def test_adaptive_less_churn_than_static():
     static = _make_model(
+        num_users=200,
         dark_pattern_intensity=0.6,
         pattern_forced_trial=True,
         pattern_hard_cancel=True,
@@ -234,6 +235,7 @@ def test_adaptive_less_churn_than_static():
         seed=42,
     )
     adaptive = _make_model(
+        num_users=200,
         dark_pattern_intensity=0.6,
         pattern_forced_trial=True,
         pattern_hard_cancel=True,
@@ -241,12 +243,12 @@ def test_adaptive_less_churn_than_static():
         adaptive_platform=True,
         seed=42,
     )
-    for _ in range(50):
+    for _ in range(80):
         static.step()
         adaptive.step()
     static_churn = sum(1 for a in static.user_agents if not a.active)
     adaptive_churn = sum(1 for a in adaptive.user_agents if not a.active)
-    # Adaptive platform should cause the same or fewer churns
+    # Adaptive platform should cause the same or fewer churns over longer horizon
     assert adaptive_churn <= static_churn
 
 

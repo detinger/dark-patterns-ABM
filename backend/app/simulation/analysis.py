@@ -181,7 +181,7 @@ def compute_summary_statistics(model_data: pd.DataFrame) -> dict:
     return {
         "final_avg_trust_active": float(last["mean_trust"]),
         "final_avg_trust_all": float(last["mean_trust_all"]),
-        "total_churn": int(last["cumulative_churn"]),
+        "total_churn": int(model_data.iloc[0]["active_users"] - last["active_users"]),
         "final_churn_rate": (
             float(last["step_churns"] / active) if active > 0 else 0.0
         ),

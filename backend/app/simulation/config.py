@@ -111,11 +111,11 @@ BETA_SUPPORT_RECOVERY = 0.10
 DELTA_EXPOSURE_TO_HARM = 0.18
 GAMMA_SOCIAL_TRUST_LOSS = 0.12
 
-THETA0 = -2.20
-THETA_TRUST = 2.80
-THETA_HARM = 1.90
-THETA_SOCIAL = 1.20
-THETA_SWITCHING_COST = 1.60
+THETA0 = -6.20              # baseline intercept (~0.1% weekly churn at healthy trust → ~90% retained over 2yr)
+THETA_TRUST = 3.50          # weight of trust deficit (1 - T)
+THETA_HARM = 2.50           # weight of cumulative harm
+THETA_SOCIAL = 1.50         # weight of negative WOM exposure
+THETA_SWITCHING_COST = 1.80 # protective effect of switching costs
 
 # ── 6. Pattern exposure probabilities (scaled by global intensity) ──
 
@@ -175,10 +175,10 @@ ADAPTATION_INTENSITY_INCREASE = 0.01
 
 # ── 12. Tipping-point thresholds ────────────────────────────────────
 
-TRUST_COLLAPSE_THRESHOLD = 0.02
-CHURN_ACCELERATION_THRESHOLD = 0.03
-WOM_BURST_THRESHOLD = 0.40
-TIPPING_POINT_PERSISTENCE = 3
+TRUST_COLLAPSE_THRESHOLD = 0.03    # 3% trust drop per step signals collapse
+CHURN_ACCELERATION_THRESHOLD = 0.03  # 3% of active users churn in a single step
+WOM_BURST_THRESHOLD = 0.40         # 40% of active users receiving negative WOM in a step
+TIPPING_POINT_PERSISTENCE = 5      # must hold for 5 consecutive steps
 
 # ── 13. Scenario presets ────────────────────────────────────────────
 #
