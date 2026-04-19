@@ -37,6 +37,8 @@ from app.simulation.config import (
     MAX_TRUST_LOSS_PER_STEP,
     MAX_HARM_GAIN_PER_STEP,
     NATURAL_ATTRITION_PROBABILITY,
+    HIDDEN_EXTRACTION_MULTIPLIER,
+    REPUTATION_FLOOR,
 )
 from app.simulation.metrics import build_all_reporters
 from app.simulation.patterns import DarkPattern
@@ -425,10 +427,22 @@ class DarkPatternTrustModel(mesa.Model):
         active_count = sum(1 for a in self.user_agents if a.active)
 
         step_base_revenue = active_count * BASE_REVENUE_PER_USER
-        step_dp_revenue = sum(
-            dp.intensity * dp.short_term_gain_weight * active_count
-            for dp in self.dark_patterns.values()
-        )
+
+        # Dark-pattern revenue: undetected exposures are MORE profitable than
+        # detected ones — silent extraction (hidden charges, forced upsells,
+        # drip fees) carries no complaint or churn signal for the platform.
+        step_dp_revenue = 0.0
+        for dp in self.dark_patterns.values():
+            if dp.intensity <= 0.0:
+                continue
+            detected = self._step_detections_by_pattern.get(dp.name, 0)
+            exposed = self._step_exposure_count_by_pattern.get(dp.name, 0)
+            undetected = max(0, exposed - detected)
+            step_dp_revenue += (
+                detected * dp.intensity * dp.short_term_gain_weight
+                + undetected * dp.intensity * dp.short_term_gain_weight * HIDDEN_EXTRACTION_MULTIPLIER
+            )
+
         step_churn_cost = self._step_churns * CHURN_REPLACEMENT_COST
         step_support_cost = (
             active_count * SUPPORT_COST_RATE * self.platform.customer_support_quality
@@ -450,7 +464,7 @@ class DarkPatternTrustModel(mesa.Model):
         pos_wom_boost = (self._step_positive_wom / n) * POSITIVE_WOM_REPUTATION_WEIGHT * 100
 
         self.platform_reputation = max(
-            0.0,
+            REPUTATION_FLOOR,   # even the worst platform retains some baseline
             min(
                 REPUTATION_NATURAL_CAP,
                 self.platform_reputation

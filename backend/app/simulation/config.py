@@ -184,6 +184,10 @@ REPUTATION_DAMAGE_COST = 0.5
 REFERRAL_VALUE = 0.3
 SUPPORT_COST_RATE = 0.2
 RETENTION_VALUE = 0.1
+# Undetected exposures extract MORE revenue than detected ones:
+# the platform captures hidden charges, forced upsells, and drip fees
+# silently — no complaint, no churn signal, pure profit.
+HIDDEN_EXTRACTION_MULTIPLIER = 1.5
 
 # ── 10. Platform reputation ─────────────────────────────────────────
 
@@ -193,6 +197,9 @@ WOM_REPUTATION_WEIGHT = 0.06
 POSITIVE_WOM_REPUTATION_WEIGHT = 0.03
 REPUTATION_RECOVERY_RATE = 0.10
 REPUTATION_NATURAL_CAP = 92.0
+# Even the most aggressive platform retains some baseline reputation
+# (brand presence, lock-in, no competitors, regulatory tolerance).
+REPUTATION_FLOOR = 5.0
 
 # ── 11. Adaptation thresholds ───────────────────────────────────────
 

@@ -214,9 +214,14 @@ class UserAgent(mesa.Agent):
             * detection_multiplier
         )
 
-        # 5. Harm accumulation  (doc formula)
+        # 5. Harm accumulation  (doc formula + saturation)
+        # Saturation factor max(0, 1-harm) means harm grows logistically:
+        # full rate near 0, slowing as harm → 1.0, zero gain above 1.0.
+        # This models desensitisation — users stop reacting to a bad platform
+        # they've already internalised as normal.
         delta = DELTA_EXPOSURE_TO_HARM
-        harm_gain = delta * scaled_harm * (0.7 + 0.6 * self.manipulation_sensitivity)
+        saturation = max(0.0, 1.0 - self.harm)
+        harm_gain = delta * scaled_harm * (0.7 + 0.6 * self.manipulation_sensitivity) * saturation
 
         # 6. Update state
         self.trust = clamp(self.trust - trust_loss)
