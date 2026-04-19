@@ -43,6 +43,14 @@ from app.simulation.config import (
     INITIAL_HARM_FRACTION,
     HARM_DAMPENING_FACTOR,
     HARM_DAMPENING_CAP,
+    WOM_HARM_COOLDOWN_THRESHOLD,
+    WOM_RAMP_RANGE,
+    WOM_DAMPING_FACTOR,
+    WOM_MAX_NEIGHBORS_PER_STEP,
+    WOM_DIMINISHING_RATE,
+    WOM_TRUST_SHIELD,
+    RECOVERY_EXPOSURE_CEILING,
+    NATURAL_TRUST_RECOVERY,
 )
 from app.simulation.patterns import (
     DarkPattern,
@@ -117,6 +125,7 @@ class UserAgent(mesa.Agent):
         self.negative_wom: float = 0.0
         self.active: bool = True
         self.network_id: int | None = None
+        self._wom_ramp_factor: float = 0.0
 
         # ── Detection tracking ─────────────────────────────────────
         self.warning_awareness: float = 0.0
@@ -142,6 +151,7 @@ class UserAgent(mesa.Agent):
         # ── Per-step scratch ───────────────────────────────────────
         self._step_detected_patterns: list[str] = []
         self._step_total_harm: float = 0.0
+        self._step_wom_received: int = 0
 
         # ── Reporting ──────────────────────────────────────────────
         self.last_exposure: float = 0.0

@@ -353,3 +353,12 @@ def test_aggressive_dp_net_value_lower_than_control():
     # Over a long enough horizon, the aggressive platform's net value
     # should be lower because reputation collapse discounts revenue
     assert aggressive._net_value < control._net_value
+
+
+def test_agent_has_wom_realism_attributes():
+    model = _make_model()
+    for agent in model.user_agents:
+        assert hasattr(agent, "_step_wom_received")
+        assert agent._step_wom_received == 0
+        assert hasattr(agent, "_wom_ramp_factor")
+        assert agent._wom_ramp_factor == 0.0
