@@ -260,6 +260,11 @@ class UserAgent(mesa.Agent):
 
     # ── Recovery ───────────────────────────────────────────────────
 
+    def _recovery_ceiling(self) -> float:
+        """Harm-adjusted trust ceiling: accumulated harm permanently
+        depresses how far trust can recover."""
+        return self.trust_baseline * (1.0 - self.harm)
+
     def apply_recovery(self) -> None:
         """Partial trust recovery via customer support.
 
@@ -280,27 +285,39 @@ class UserAgent(mesa.Agent):
         harm_dampening = 1.0 - min(
             self.harm * HARM_DAMPENING_FACTOR, HARM_DAMPENING_CAP
         )
+        # Weaken recovery while dark patterns are active on the platform
+        dp_intensity = getattr(self.model, "dark_pattern_intensity", 0.0)
+        intensity_dampening = 1.0 - dp_intensity
         recovery = (
             BETA_SUPPORT_RECOVERY
             * support_quality
             * harm_dampening
             * exposure_dampening
+            * intensity_dampening
         )
         recovery = max(0.0, recovery)
-        self.trust = min(self.trust_baseline, clamp(self.trust + recovery))
+        ceiling = self._recovery_ceiling()
+        self.trust = min(ceiling, clamp(self.trust + recovery))
         self.perceived_fairness = clamp(
             self.perceived_fairness + 0.7 * recovery
         )
 
     def apply_natural_recovery(self) -> None:
-        """Small passive trust recovery toward baseline each step."""
+        """Small passive trust recovery toward harm-adjusted ceiling.
+
+        Scaled down by platform dark-pattern intensity so recovery is
+        weakened while patterns are actively running.
+        """
         if not self.active:
             return
-        if self.trust < self.trust_baseline:
-            gap = self.trust_baseline - self.trust
+        ceiling = self._recovery_ceiling()
+        if self.trust < ceiling:
+            dp_intensity = getattr(self.model, "dark_pattern_intensity", 0.0)
+            intensity_dampening = 1.0 - dp_intensity
+            gap = ceiling - self.trust
             self.trust = min(
-                self.trust_baseline,
-                self.trust + NATURAL_TRUST_RECOVERY * gap,
+                ceiling,
+                self.trust + NATURAL_TRUST_RECOVERY * gap * intensity_dampening,
             )
 
     # ── Word of Mouth ──────────────────────────────────────────────
@@ -425,9 +442,9 @@ class UserAgent(mesa.Agent):
                 nbr.positive_sentiment
                 + POSITIVE_WOM_TRUST_BOOST * (1.0 - nbr.positive_sentiment),
             )
-            # Boost trust capped at baseline
+            # Boost trust capped at harm-adjusted ceiling
             nbr.trust = min(
-                nbr.trust_baseline,
+                nbr._recovery_ceiling(),
                 clamp(
                     nbr.trust
                     + POSITIVE_WOM_TRUST_BOOST * social_influence_strength

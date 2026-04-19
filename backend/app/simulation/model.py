@@ -77,6 +77,7 @@ class DarkPatternTrustModel(mesa.Model):
         self.social_influence_strength = social_influence_strength
         self.review_visibility = review_visibility
         self.retention_bonus = retention_bonus
+        self.dark_pattern_intensity = dark_pattern_intensity
         self.pattern_forced_trial = pattern_forced_trial
         self.pattern_hard_cancel = pattern_hard_cancel
         self.pattern_drip_pricing = pattern_drip_pricing
@@ -341,7 +342,11 @@ class DarkPatternTrustModel(mesa.Model):
         for user in self.user_agents:
             if not user.active:
                 continue
-            if not user._step_detected_patterns and user.trust >= SATISFIED_TRUST_THRESHOLD:
+            if (not user._step_detected_patterns
+                    and user.trust >= SATISFIED_TRUST_THRESHOLD
+                    and user.negative_wom <= 0
+                    and user.harm <= 0
+                    and user.cumulative_exposure <= 0):
                 cooldown_clear = (
                     self.steps - user.last_negative_wom_received_step
                 ) >= WOM_COOLDOWN_PERIOD
