@@ -100,7 +100,7 @@ export default function App() {
         <div className="content">
           {state ? (
             <>
-              <KpiCards metrics={state.metrics} platform={state.platform} steps={state.steps} maxSteps={state.max_steps} />
+              <KpiCards metrics={state.metrics} steps={state.steps} maxSteps={state.max_steps} />
               <TippingPointsPanel tippingPoints={state.tipping_points} />
               <ChartsPanel series={timeseries} tippingPoints={state.tipping_points} />
               <NetworkGraphPanel
