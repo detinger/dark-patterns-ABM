@@ -138,6 +138,8 @@ class DarkPatternTrustModel(mesa.Model):
         # ── Economics ─────────────────────────────────────────────────
         self.platform_reputation: float = self.random.uniform(*DEFAULT_REPUTATION_RANGE)
         self._step_revenue: float = 0.0
+        self._step_base_revenue: float = 0.0
+        self._step_dp_revenue: float = 0.0
         self._step_costs: float = 0.0
         self._step_profit: float = 0.0
         self._cumulative_revenue: float = 0.0
@@ -442,6 +444,10 @@ class DarkPatternTrustModel(mesa.Model):
                 detected * dp.intensity * dp.short_term_gain_weight
                 + undetected * dp.intensity * dp.short_term_gain_weight * HIDDEN_EXTRACTION_MULTIPLIER
             )
+
+        # Persist breakdown for metrics / charts
+        self._step_base_revenue = step_base_revenue
+        self._step_dp_revenue = step_dp_revenue
 
         step_churn_cost = self._step_churns * CHURN_REPLACEMENT_COST
         step_support_cost = (

@@ -32,6 +32,8 @@ export interface Metrics {
   step_churns: number
   step_negative_wom_count: number
   step_positive_wom_count: number
+  step_base_revenue: number
+  step_dp_revenue: number
   step_revenue: number
   step_costs: number
   step_profit: number

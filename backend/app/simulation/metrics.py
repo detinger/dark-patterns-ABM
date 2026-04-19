@@ -121,6 +121,16 @@ def platform_reputation(model) -> float:
     return model.platform_reputation
 
 
+def step_base_revenue(model) -> float:
+    """Per-step subscription revenue from active users."""
+    return model._step_base_revenue
+
+
+def step_dp_revenue(model) -> float:
+    """Per-step dark-pattern extraction revenue (detected + hidden)."""
+    return model._step_dp_revenue
+
+
 def step_revenue(model) -> float:
     return model._step_revenue
 
@@ -332,6 +342,8 @@ def build_all_reporters() -> dict[str, callable]:
     reporters["avg_positive_sentiment"] = avg_positive_sentiment
     reporters["customer_support_quality"] = customer_support_quality
     reporters["platform_reputation"] = platform_reputation
+    reporters["step_base_revenue"] = step_base_revenue
+    reporters["step_dp_revenue"] = step_dp_revenue
     reporters["step_revenue"] = step_revenue
     reporters["step_costs"] = step_costs
     reporters["step_profit"] = step_profit

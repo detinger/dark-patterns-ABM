@@ -149,7 +149,7 @@ export function ChartsPanel({ series, tippingPoints }: Props) {
           </ResponsiveContainer>
         </div>
 
-        {/* 6. Per-step economics */}
+        {/* 6. Per-step economics — revenue breakdown */}
         <div className="chart-card">
           <h3>Platform economics per step</h3>
           <ResponsiveContainer width="100%" height={280}>
@@ -161,7 +161,8 @@ export function ChartsPanel({ series, tippingPoints }: Props) {
               <Legend verticalAlign="bottom" wrapperStyle={{ color: 'var(--text-main)', paddingTop: 8 }} />
               {renderTippingLines(tippingPoints)}
               <ReferenceLine y={0} stroke="var(--chart-axis)" strokeDasharray="3 3" />
-              <Line type="monotone" dataKey="step_revenue" name="Revenue" stroke="#22c55e" dot={false} />
+              <Line type="monotone" dataKey="step_base_revenue" name="Subscription revenue" stroke="#22c55e" dot={false} />
+              <Line type="monotone" dataKey="step_dp_revenue" name="DP extraction revenue" stroke="#f59e0b" dot={false} />
               <Line type="monotone" dataKey="step_costs" name="Costs" stroke="#ef4444" dot={false} />
               <Line type="monotone" dataKey="step_profit" name="Profit" stroke="#1e293b" strokeWidth={2} dot={false} />
             </LineChart>

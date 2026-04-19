@@ -62,6 +62,7 @@ USER_TYPE_RANGES: dict[str, dict[str, tuple[float, float]]] = {
         "complaint_propensity": (0.40, 0.65),
         "switching_cost": (0.30, 0.45),
         "pattern_sensitivity": (1.0, 1.4),
+        "trust_resilience": (0.0, 0.10),
     },
     "naive": {
         "trust_baseline": (0.75, 0.90),
@@ -71,6 +72,9 @@ USER_TYPE_RANGES: dict[str, dict[str, tuple[float, float]]] = {
         "complaint_propensity": (0.10, 0.25),
         "switching_cost": (0.50, 0.70),
         "pattern_sensitivity": (0.6, 0.9),
+        # Naive users rationalise or fail to attribute bad UX to dark patterns,
+        # so 30-50% of potential trust loss is dampened.
+        "trust_resilience": (0.30, 0.50),
     },
     "activist": {
         "trust_baseline": (0.60, 0.75),
@@ -80,6 +84,7 @@ USER_TYPE_RANGES: dict[str, dict[str, tuple[float, float]]] = {
         "complaint_propensity": (0.60, 0.85),
         "switching_cost": (0.25, 0.40),
         "pattern_sensitivity": (1.1, 1.5),
+        "trust_resilience": (0.0, 0.05),
     },
 }
 
@@ -119,7 +124,7 @@ BETA_SUPPORT_RECOVERY = 0.10
 DELTA_EXPOSURE_TO_HARM = 0.18
 GAMMA_SOCIAL_TRUST_LOSS = 0.12
 
-THETA0 = -5.50              # calibrated: ~0.3% weekly healthy churn → ~85% 2yr retention
+THETA0 = -7.00              # calibrated: ~0.08% weekly healthy churn → ~92% 2yr retention
 THETA_TRUST = 2.80          # weight of trust deficit (1 - T)
 THETA_HARM = 1.90           # weight of cumulative harm
 THETA_SOCIAL = 1.20         # weight of negative WOM exposure
@@ -130,7 +135,7 @@ THETA_SWITCHING_COST = 1.60 # protective effect of switching costs
 # effective per-step loss.  These caps limit how fast trust/harm can change
 # in a single step so the decline is gradual (~15 steps to collapse),
 # creating a visible extraction window before churn accelerates.
-MAX_TRUST_LOSS_PER_STEP = 0.05   # ~15 steps from healthy trust to zero
+MAX_TRUST_LOSS_PER_STEP = 0.035  # ~21 steps from healthy trust to zero
 MAX_HARM_GAIN_PER_STEP = 0.04    # harm builds gradually
 
 # Exposure buildup: agents ramp up to full harm over the first N exposures

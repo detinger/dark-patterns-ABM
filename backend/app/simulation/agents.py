@@ -101,6 +101,7 @@ class UserAgent(mesa.Agent):
             rng, *ranges["complaint_propensity"]
         )
         self.switching_cost: float = beta_sample(rng, *ranges["switching_cost"])
+        self.trust_resilience: float = beta_sample(rng, *ranges["trust_resilience"])
 
         # ── Per-pattern sensitivity ────────────────────────────────
         sens_range = ranges["pattern_sensitivity"]
@@ -205,6 +206,8 @@ class UserAgent(mesa.Agent):
         self._step_total_harm += scaled_harm
 
         # 4. Trust loss  (doc formula)
+        # trust_resilience dampens loss for users who rationalise or fail
+        # to attribute bad UX to dark patterns (primarily naive users).
         alpha = ALPHA_EXPOSURE_TO_TRUST
         detection_multiplier = 0.6 + 0.8 * self.digital_literacy
         trust_loss = (
@@ -212,6 +215,7 @@ class UserAgent(mesa.Agent):
             * scaled_harm
             * self.manipulation_sensitivity
             * detection_multiplier
+            * (1.0 - self.trust_resilience)
         )
 
         # 5. Harm accumulation  (doc formula + saturation)
@@ -272,15 +276,24 @@ class UserAgent(mesa.Agent):
     # ── Word of Mouth ──────────────────────────────────────────────
 
     def decide_word_of_mouth(self) -> float:
-        """Compute negative WOM propensity and cache it."""
+        """Compute negative WOM propensity and cache it.
+
+        Harm-gated: users who haven't experienced any harm yet do not
+        generate negative WOM — people don't complain about dark patterns
+        they haven't been hurt by.  Weights are tilted toward actual harm
+        and trust erosion rather than personality traits alone.
+        """
         if not self.active:
             self.negative_wom = 0.0
             return 0.0
+        if self.harm < 0.01 and self._step_total_harm <= 0:
+            self.negative_wom = 0.0
+            return 0.0
         base = (
-            0.20 * self.social_activity
-            + 0.35 * self.complaint_propensity
-            + 0.30 * min(1.0, self.harm)
-            + 0.15 * (1.0 - self.trust)
+            0.10 * self.social_activity
+            + 0.20 * self.complaint_propensity
+            + 0.45 * min(1.0, self.harm)
+            + 0.25 * (1.0 - self.trust)
         )
         self.negative_wom = clamp(base)
         return self.negative_wom
