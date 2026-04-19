@@ -196,6 +196,11 @@ RETENTION_VALUE = 0.1
 # the platform captures hidden charges, forced upsells, and drip fees
 # silently — no complaint, no churn signal, pure profit.
 HIDDEN_EXTRACTION_MULTIPLIER = 1.5
+# Revenue per user scales with platform reputation:
+# effective_rate = BASE_REVENUE_PER_USER × (reputation / 100) ^ exponent.
+# 0.5 (square root) gives a natural curve — moderate rep loss is mild,
+# severe rep loss is punishing.
+REPUTATION_REVENUE_EXPONENT = 0.5
 
 # ── 10. Platform reputation ─────────────────────────────────────────
 
