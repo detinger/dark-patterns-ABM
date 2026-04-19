@@ -282,3 +282,74 @@ def test_clean_competitor_reputation_stable():
         model.step()
     # Without dark patterns, reputation should stay above 0.6
     assert model.platform.reputation >= 0.6
+
+
+# ── Reputation-discounted revenue tests ──────────────────────────────
+
+
+def test_reputation_discounts_revenue():
+    """Low reputation should reduce per-step revenue via reputation factor."""
+    model = _make_model(
+        num_users=200,
+        dark_pattern_intensity=0.8,
+        pattern_forced_trial=True,
+        pattern_hard_cancel=True,
+        pattern_drip_pricing=True,
+        seed=42,
+    )
+    for _ in range(60):
+        model.step()
+    # After 60 steps of aggressive dark patterns, reputation should be low
+    assert model.platform_reputation < 20.0
+    # Per-step base revenue should be significantly less than
+    # active_count * BASE_REVENUE_PER_USER (the un-discounted amount)
+    from app.simulation.config import BASE_REVENUE_PER_USER
+    active_count = sum(1 for a in model.user_agents if a.active)
+    undiscounted = active_count * BASE_REVENUE_PER_USER
+    assert model._step_base_revenue < undiscounted * 0.6
+
+
+def test_control_revenue_not_discounted():
+    """Without dark patterns, reputation stays high so revenue is near full rate."""
+    model = _make_model(
+        num_users=200,
+        dark_pattern_intensity=0.0,
+        pattern_forced_trial=False,
+        pattern_hard_cancel=False,
+        pattern_drip_pricing=False,
+        customer_support_quality=0.5,
+        seed=42,
+    )
+    for _ in range(30):
+        model.step()
+    from app.simulation.config import BASE_REVENUE_PER_USER
+    active_count = sum(1 for a in model.user_agents if a.active)
+    undiscounted = active_count * BASE_REVENUE_PER_USER
+    # With high reputation, revenue should be at least 80% of undiscounted
+    assert model._step_base_revenue >= undiscounted * 0.8
+
+
+def test_aggressive_dp_net_value_lower_than_control():
+    """Aggressive dark patterns should produce lower net value than control."""
+    control = _make_model(
+        num_users=200,
+        dark_pattern_intensity=0.0,
+        pattern_forced_trial=False,
+        pattern_hard_cancel=False,
+        pattern_drip_pricing=False,
+        seed=42,
+    )
+    aggressive = _make_model(
+        num_users=200,
+        dark_pattern_intensity=0.8,
+        pattern_forced_trial=True,
+        pattern_hard_cancel=True,
+        pattern_drip_pricing=True,
+        seed=42,
+    )
+    for _ in range(100):
+        control.step()
+        aggressive.step()
+    # Over a long enough horizon, the aggressive platform's net value
+    # should be lower because reputation collapse discounts revenue
+    assert aggressive._net_value < control._net_value
