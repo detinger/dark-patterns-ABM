@@ -466,9 +466,11 @@ class PlatformAgent(mesa.Agent):
         if not self.adaptive_platform:
             return
 
+        platform_rep = self.model.platform_reputation
         if (
             self.model.churn_rate > CHURN_ADAPTATION_THRESHOLD
-            or self.reputation < 0.45
+            or self.reputation < 0.55
+            or platform_rep < 40.0
         ):
             self.dark_pattern_intensity = clamp(
                 self.dark_pattern_intensity - ADAPTATION_INTENSITY_REDUCTION

@@ -212,13 +212,13 @@ REPUTATION_RECOVERY_RATE = 0.10
 REPUTATION_NATURAL_CAP = 92.0
 # Even the most aggressive platform retains some baseline reputation
 # (brand presence, lock-in, no competitors, regulatory tolerance).
-REPUTATION_FLOOR = 5.0
+REPUTATION_FLOOR = 2.0
 
 # ── 11. Adaptation thresholds ───────────────────────────────────────
 
-CHURN_ADAPTATION_THRESHOLD = 0.08
+CHURN_ADAPTATION_THRESHOLD = 0.05
 WOM_ADAPTATION_THRESHOLD = 0.10
-ADAPTATION_INTENSITY_REDUCTION = 0.04
+ADAPTATION_INTENSITY_REDUCTION = 0.08
 ADAPTATION_SUPPORT_BOOST = 0.03
 ADAPTATION_INTENSITY_INCREASE = 0.01
 
