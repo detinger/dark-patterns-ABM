@@ -15,6 +15,7 @@ from app.simulation.config import (
     DEFAULT_TYPE_DISTRIBUTION,
     USER_TYPE_RANGES,
     DARK_PATTERN_DEFAULTS,
+    BETA_SHAPE,
     ALPHA_EXPOSURE_TO_TRUST,
     BETA_SUPPORT_RECOVERY,
     DELTA_EXPOSURE_TO_HARM,
@@ -38,6 +39,10 @@ from app.simulation.config import (
     ADAPTATION_INTENSITY_REDUCTION,
     ADAPTATION_SUPPORT_BOOST,
     ADAPTATION_INTENSITY_INCREASE,
+    EXPOSURE_BUILDUP_STEPS,
+    INITIAL_HARM_FRACTION,
+    HARM_DAMPENING_FACTOR,
+    HARM_DAMPENING_CAP,
 )
 from app.simulation.patterns import (
     DarkPattern,
@@ -53,6 +58,16 @@ from app.simulation.patterns import (
 def clamp(x: float, lo: float = 0.0, hi: float = 1.0) -> float:
     """Clamp *x* to the closed interval [lo, hi]."""
     return max(lo, min(hi, x))
+
+
+def beta_sample(rng, low: float, high: float, shape: float = BETA_SHAPE) -> float:
+    """Draw from Beta(shape, shape) scaled to [low, high].
+
+    Symmetric bell shape — concentrates mass around the midpoint, with
+    rare extreme values.  Higher *shape* values tighten the distribution.
+    """
+    raw = rng.betavariate(shape, shape)
+    return low + raw * (high - low)
 
 
 # ── UserAgent ──────────────────────────────────────────────────────────
@@ -73,24 +88,24 @@ class UserAgent(mesa.Agent):
         weights = list(type_dist.values())
         self.user_type: str = rng.choices(types, weights=weights, k=1)[0]
 
-        # ── Sample attributes from USER_TYPE_RANGES ────────────────
+        # ── Sample attributes from USER_TYPE_RANGES (Beta distribution) ─
         ranges = USER_TYPE_RANGES[self.user_type]
 
-        self.trust_baseline: float = rng.uniform(*ranges["trust_baseline"])
-        self.digital_literacy: float = rng.uniform(*ranges["digital_literacy"])
-        self.manipulation_sensitivity: float = rng.uniform(
-            *ranges["manipulation_sensitivity"]
+        self.trust_baseline: float = beta_sample(rng, *ranges["trust_baseline"])
+        self.digital_literacy: float = beta_sample(rng, *ranges["digital_literacy"])
+        self.manipulation_sensitivity: float = beta_sample(
+            rng, *ranges["manipulation_sensitivity"]
         )
-        self.social_activity: float = rng.uniform(*ranges["social_activity"])
-        self.complaint_propensity: float = rng.uniform(
-            *ranges["complaint_propensity"]
+        self.social_activity: float = beta_sample(rng, *ranges["social_activity"])
+        self.complaint_propensity: float = beta_sample(
+            rng, *ranges["complaint_propensity"]
         )
-        self.switching_cost: float = rng.uniform(*ranges["switching_cost"])
+        self.switching_cost: float = beta_sample(rng, *ranges["switching_cost"])
 
         # ── Per-pattern sensitivity ────────────────────────────────
         sens_range = ranges["pattern_sensitivity"]
         self.pattern_sensitivity: dict[str, float] = {
-            pname: rng.uniform(*sens_range)
+            pname: beta_sample(rng, *sens_range)
             for pname in DARK_PATTERN_DEFAULTS
         }
 
@@ -108,6 +123,10 @@ class UserAgent(mesa.Agent):
         self.last_negative_wom_received_step: int = -(WOM_COOLDOWN_PERIOD + 1)
         self.exposure_count: int = 0
         self.cumulative_exposure: float = 0.0
+        # Per-pattern exposure counts drive the buildup ramp
+        self.pattern_exposure_count: dict[str, int] = {
+            pname: 0 for pname in DARK_PATTERN_DEFAULTS
+        }
 
         # ── Event counters ─────────────────────────────────────────
         self.detected_events: dict[str, int] = {
@@ -149,6 +168,9 @@ class UserAgent(mesa.Agent):
 
         self.exposure_count += 1
         self.cumulative_exposure += intensity
+        self.pattern_exposure_count[pattern.name] = (
+            self.pattern_exposure_count.get(pattern.name, 0) + 1
+        )
 
         # 2. Detection check
         detected = calculate_detection(
@@ -168,6 +190,16 @@ class UserAgent(mesa.Agent):
         agent_sensitivity = self.pattern_sensitivity.get(pattern.name, 1.0)
         harm = calculate_harm(pattern, intensity, detected, agent_sensitivity)
         scaled_harm = harm / 100.0
+
+        # Exposure buildup: first N encounters with a pattern deliver partial
+        # harm while the agent habituates.  Full harm kicks in after buildup.
+        pat_count = self.pattern_exposure_count[pattern.name]
+        if pat_count < EXPOSURE_BUILDUP_STEPS:
+            buildup_factor = (
+                INITIAL_HARM_FRACTION
+                + (1.0 - INITIAL_HARM_FRACTION) * (pat_count / EXPOSURE_BUILDUP_STEPS)
+            )
+            scaled_harm *= buildup_factor
 
         self.last_exposure = scaled_harm
         self._step_total_harm += scaled_harm
@@ -210,13 +242,22 @@ class UserAgent(mesa.Agent):
     # ── Recovery ───────────────────────────────────────────────────
 
     def apply_recovery(self) -> None:
-        """Partial trust recovery via customer support."""
+        """Partial trust recovery via customer support (doc: β·R_i(t)).
+
+        Recovery only applies when the user was NOT exposed to any dark
+        pattern this step — it represents a positive platform experience
+        (e.g. good customer support), not an unconditional drift.
+        """
         if not self.active:
             return
+        # No recovery if exposed this step
+        if self._step_total_harm > 0:
+            return
         support_quality = self.model.platform.customer_support_quality
-        recovery = (
-            BETA_SUPPORT_RECOVERY * support_quality * (1.0 - self.harm * 0.15)
-        )
+        # Harm dampening: as cumulative harm grows, customer support is less
+        # effective at rebuilding trust — captures desensitisation/cynicism.
+        dampening = 1.0 - min(self.harm * HARM_DAMPENING_FACTOR, HARM_DAMPENING_CAP)
+        recovery = BETA_SUPPORT_RECOVERY * support_quality * dampening
         recovery = max(0.0, recovery)
         self.trust = min(self.trust_baseline, clamp(self.trust + recovery))
         self.perceived_fairness = clamp(
@@ -339,12 +380,14 @@ class UserAgent(mesa.Agent):
             self.last_churn_probability = 1.0
             return 1.0
 
+        retention_bonus = getattr(self.model, "retention_bonus", 0.0)
         z = (
             THETA0
             + THETA_TRUST * (1.0 - self.trust)
             + THETA_HARM * self.harm
             + THETA_SOCIAL * self.negative_wom
             - THETA_SWITCHING_COST * self.switching_cost
+            - retention_bonus
         )
         p = 1.0 / (1.0 + math.exp(-z))
         self.last_churn_probability = clamp(p)

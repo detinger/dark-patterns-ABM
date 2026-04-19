@@ -3,9 +3,10 @@ Combined configuration for the Dark-Matters ABM simulation.
 
 All named constants live here — no magic numbers elsewhere.
 Sections:
+    0.  Agent sampling
     1.  Model defaults
     2.  User-type distribution
-    3.  User-type parameter ranges (uniform draws)
+    3.  User-type parameter ranges (Beta-distributed draws)
     4.  Dark-pattern profiles
     5.  Doc formula coefficients
     6.  Pattern exposure probabilities
@@ -20,6 +21,12 @@ Sections:
 """
 
 from __future__ import annotations
+
+# ── 0. Agent sampling ───────────────────────────────────────────────
+
+BETA_SHAPE: float = 5.0
+# Symmetric Beta(shape, shape) — bell-shaped, peaks at midpoint of each
+# trait range.  Higher values concentrate mass tighter around the mean.
 
 # ── 1. Model defaults ───────────────────────────────────────────────
 
@@ -38,9 +45,10 @@ DEFAULT_TYPE_DISTRIBUTION: dict[str, float] = {
     "activist": 0.20,
 }
 
-# ── 3. User-type parameter ranges (uniform low, high) ──────────────
+# ── 3. User-type parameter ranges (Beta-distributed draws) ─────────
 #
-# Each sub-dict maps trait → (low, high) for a uniform draw.
+# Each sub-dict maps trait → (low, high) for a Beta(BETA_SHAPE, BETA_SHAPE)
+# draw scaled to [low, high].  Bell-shaped — rare to draw extreme values.
 # Traits: trust_baseline, digital_literacy, manipulation_sensitivity,
 #          social_activity, complaint_propensity, switching_cost,
 #          pattern_sensitivity.
@@ -84,7 +92,7 @@ DARK_PATTERN_DEFAULTS: dict[str, dict[str, float]] = {
         "detected_harm_multiplier": 2.2,
         "hidden_harm_multiplier": 0.8,
         "wom_propensity_multiplier": 1.6,
-        "short_term_gain_weight": 1.6,
+        "short_term_gain_weight": 3.0,    # forced conversions are very lucrative
     },
     "hard_cancel": {
         "detectability": 0.4,
@@ -92,7 +100,7 @@ DARK_PATTERN_DEFAULTS: dict[str, dict[str, float]] = {
         "detected_harm_multiplier": 2.0,
         "hidden_harm_multiplier": 0.5,
         "wom_propensity_multiplier": 1.3,
-        "short_term_gain_weight": 1.0,
+        "short_term_gain_weight": 2.0,    # retained subscriber revenue
     },
     "drip_pricing": {
         "detectability": 0.4,
@@ -100,7 +108,7 @@ DARK_PATTERN_DEFAULTS: dict[str, dict[str, float]] = {
         "detected_harm_multiplier": 2.0,
         "hidden_harm_multiplier": 0.5,
         "wom_propensity_multiplier": 1.3,
-        "short_term_gain_weight": 1.0,
+        "short_term_gain_weight": 2.5,    # hidden fees extraction
     },
 }
 
@@ -111,11 +119,32 @@ BETA_SUPPORT_RECOVERY = 0.10
 DELTA_EXPOSURE_TO_HARM = 0.18
 GAMMA_SOCIAL_TRUST_LOSS = 0.12
 
-THETA0 = -6.20              # baseline intercept (~0.1% weekly churn at healthy trust → ~90% retained over 2yr)
-THETA_TRUST = 3.50          # weight of trust deficit (1 - T)
-THETA_HARM = 2.50           # weight of cumulative harm
-THETA_SOCIAL = 1.50         # weight of negative WOM exposure
-THETA_SWITCHING_COST = 1.80 # protective effect of switching costs
+THETA0 = -5.50              # calibrated: ~0.3% weekly healthy churn → ~85% 2yr retention
+THETA_TRUST = 2.80          # weight of trust deficit (1 - T)
+THETA_HARM = 1.90           # weight of cumulative harm
+THETA_SOCIAL = 1.20         # weight of negative WOM exposure
+THETA_SWITCHING_COST = 1.60 # protective effect of switching costs
+
+# Per-step caps: the doc formula assumes ONE aggregated exposure per step,
+# but 3 patterns can each apply alpha/delta independently, tripling the
+# effective per-step loss.  These caps limit how fast trust/harm can change
+# in a single step so the decline is gradual (~15 steps to collapse),
+# creating a visible extraction window before churn accelerates.
+MAX_TRUST_LOSS_PER_STEP = 0.05   # ~15 steps from healthy trust to zero
+MAX_HARM_GAIN_PER_STEP = 0.04    # harm builds gradually
+
+# Exposure buildup: agents ramp up to full harm over the first N exposures
+# to a given pattern, rather than absorbing full harm on first encounter.
+EXPOSURE_BUILDUP_STEPS = 3       # exposures before full harm applies
+INITIAL_HARM_FRACTION = 0.2      # fraction of harm on first exposure
+
+# Harm-dampened recovery: as cumulative harm grows, customer support
+# becomes progressively less effective at restoring trust.
+HARM_DAMPENING_FACTOR = 1.0      # at harm=1.0, dampening = min(1.0, cap)
+HARM_DAMPENING_CAP = 0.85        # recovery never drops below 15% effectiveness
+
+# Natural attrition: background churn unrelated to dark patterns.
+NATURAL_ATTRITION_PROBABILITY = 0.0001  # ~0.01% per agent per step
 
 # ── 6. Pattern exposure probabilities (scaled by global intensity) ──
 
@@ -296,9 +325,11 @@ SCENARIOS: dict[str, dict] = {
             "drip_pricing": False,
         },
         "dark_pattern_intensity": 0.0,
-        "adaptive_platform": True,
-        "customer_support_quality": 0.70,
-        "reputation_range": (75, 90),
+        "adaptive_platform": False,
+        "customer_support_quality": 0.80,
+        "social_influence_strength": 0.25,
+        "retention_bonus": 3.0,
+        "reputation_range": (80, 92),
     },
 }
 

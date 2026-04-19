@@ -34,6 +34,9 @@ from app.simulation.config import (
     REPUTATION_RECOVERY_RATE,
     REPUTATION_NATURAL_CAP,
     TIPPING_POINT_PERSISTENCE,
+    MAX_TRUST_LOSS_PER_STEP,
+    MAX_HARM_GAIN_PER_STEP,
+    NATURAL_ATTRITION_PROBABILITY,
 )
 from app.simulation.metrics import build_all_reporters
 from app.simulation.patterns import DarkPattern
@@ -58,6 +61,7 @@ class DarkPatternTrustModel(mesa.Model):
         adaptive_platform=False,
         social_influence_strength=0.18,
         review_visibility=0.35,
+        retention_bonus=0.0,
     ):
         super().__init__(rng=seed)
 
@@ -68,6 +72,7 @@ class DarkPatternTrustModel(mesa.Model):
         self.rewire_prob = rewire_prob
         self.social_influence_strength = social_influence_strength
         self.review_visibility = review_visibility
+        self.retention_bonus = retention_bonus
         self.pattern_forced_trial = pattern_forced_trial
         self.pattern_hard_cancel = pattern_hard_cancel
         self.pattern_drip_pricing = pattern_drip_pricing
@@ -253,6 +258,10 @@ class DarkPatternTrustModel(mesa.Model):
                 0.0, user.positive_sentiment * (1 - POSITIVE_WOM_DECAY_RATE)
             )
 
+            # Snapshot pre-exposure state for per-step caps
+            pre_trust = user.trust
+            pre_harm = user.harm
+
             # Exposure / detection / harm per pattern
             for pname, pattern in self.dark_patterns.items():
                 if pattern.intensity <= 0.0:
@@ -268,6 +277,20 @@ class DarkPatternTrustModel(mesa.Model):
                 if harm_delta > 0:
                     self._step_trust_loss_by_pattern[pname] += harm_delta
                     self._step_exposure_count_by_pattern[pname] += 1
+
+            # Cap per-step trust loss and harm gain.
+            # The doc formula assumes ONE aggregated exposure per step;
+            # 3 simultaneous patterns would otherwise triple the loss.
+            trust_loss = pre_trust - user.trust
+            if trust_loss > MAX_TRUST_LOSS_PER_STEP:
+                user.trust = pre_trust - MAX_TRUST_LOSS_PER_STEP
+                user.perceived_fairness = max(
+                    user.perceived_fairness,
+                    user.trust,
+                )
+            harm_gain = user.harm - pre_harm
+            if harm_gain > MAX_HARM_GAIN_PER_STEP:
+                user.harm = pre_harm + MAX_HARM_GAIN_PER_STEP
 
             if user.last_exposure > 0 and user.network_id is not None:
                 direct_exposures.append(user.network_id)
@@ -333,6 +356,15 @@ class DarkPatternTrustModel(mesa.Model):
                     social_edges.extend(edges)
                     self._step_negative_wom += len(edges)
 
+        # ── 5b. Natural attrition ─────────────────────────────────────
+        # Background churn unrelated to dark patterns (~0.01% per agent/step).
+        for user in self.user_agents:
+            if user.active and self.random.random() < NATURAL_ATTRITION_PROBABILITY:
+                user.active = False
+                self._step_churns += 1
+                if user.network_id is not None:
+                    churned_nodes.append(user.network_id)
+
         # ── 6. Update platform outcomes ───────────────────────────────
         self._update_platform_outcomes()
         self.platform.adapt_strategy()
@@ -370,14 +402,22 @@ class DarkPatternTrustModel(mesa.Model):
         mean_wom = sum(a.negative_wom for a in active) / len(active) if active else 0.0
         self.platform.reputation = clamp(0.7 * mean_tr + 0.3 * (1.0 - mean_wom))
 
-        # Short/long-term revenue (mentor's formula)
-        short_gain = 0.0
-        for a in active:
-            short_gain += 1.0
-            short_gain += 0.8 * a.last_exposure
-        self.platform.short_term_revenue += short_gain
+        # Short-term revenue: base subscription + dark-pattern extraction
+        # Dark patterns generate immediate extra revenue (forced conversions,
+        # hidden charges, upsells) proportional to exposure intensity and the
+        # pattern's short_term_gain_weight.
+        step_short = float(len(active))  # base subscription revenue per user
+        for dp in self.dark_patterns.values():
+            if dp.intensity > 0:
+                exposed_count = self._step_exposure_count_by_pattern.get(dp.name, 0)
+                step_short += exposed_count * dp.intensity * dp.short_term_gain_weight
+        self.platform.short_term_revenue += step_short
+
+        # Long-term revenue: discounted by cumulative churn AND trust erosion.
+        # A platform losing users and trust will see future revenue evaporate.
+        trust_discount = mean_tr if active else 0.0
         self.platform.long_term_revenue = self.platform.short_term_revenue * (
-            1.0 - self.cumulative_churn
+            (1.0 - self.cumulative_churn) * trust_discount
         )
 
     def _update_economics(self) -> None:
