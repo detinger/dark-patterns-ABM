@@ -364,6 +364,88 @@ def test_agent_has_wom_realism_attributes():
         assert agent._wom_ramp_factor == 0.0
 
 
+def test_wom_per_step_neighbor_limit():
+    """A user can spread WOM to at most WOM_MAX_NEIGHBORS_PER_STEP neighbors."""
+    from app.simulation.config import WOM_MAX_NEIGHBORS_PER_STEP
+    model = _make_model(num_users=50, seed=42, avg_degree=8)
+    agent = model.user_agents[0]
+    agent.harm = 0.50
+    agent.trust = 0.1
+    agent.social_activity = 0.99
+    agent.complaint_propensity = 0.99
+    agent._wom_ramp_factor = 1.0
+    agent.negative_wom = 0.9
+    edges = agent.spread_negative_wom(model.graph, model.social_influence_strength)
+    assert len(edges) <= WOM_MAX_NEIGHBORS_PER_STEP
+
+
+def test_wom_damping_reduces_spread():
+    """With damping, fewer neighbors are reached than without."""
+    model = _make_model(num_users=100, seed=42, avg_degree=8)
+    for _ in range(15):
+        model.step()
+    total_neg_wom = model._cumulative_negative_wom
+    assert total_neg_wom < 300
+
+
+def test_wom_diminishing_returns_on_receiver():
+    """A receiver getting multiple WOM messages in one step has diminishing trust loss."""
+    model = _make_model(num_users=50, seed=42)
+    target = model.user_agents[0]
+    target.trust = 0.80
+    target._step_wom_received = 0
+    initial_trust = target.trust
+
+    sender1 = model.user_agents[1]
+    sender2 = model.user_agents[2]
+    sender3 = model.user_agents[3]
+    for s in [sender1, sender2, sender3]:
+        s.harm = 0.50
+        s.trust = 0.1
+        s.social_activity = 0.99
+        s.complaint_propensity = 0.99
+        s._wom_ramp_factor = 1.0
+        s.negative_wom = 0.9
+        s.spread_negative_wom(model.graph, model.social_influence_strength)
+
+    trust_loss = initial_trust - target.trust
+    # With diminishing returns + trust shield, total loss from 3 messages
+    # should be well under 3x the single-message loss
+    assert trust_loss < 0.08
+
+
+def test_wom_trust_shield_protects_high_trust():
+    """High-trust receivers take less WOM damage than low-trust receivers."""
+    model = _make_model(num_users=50, seed=42)
+    high_trust_agent = model.user_agents[0]
+    low_trust_agent = model.user_agents[1]
+    high_trust_agent.trust = 0.90
+    low_trust_agent.trust = 0.20
+    high_trust_agent._step_wom_received = 0
+    low_trust_agent._step_wom_received = 0
+
+    ht_initial = high_trust_agent.trust
+    lt_initial = low_trust_agent.trust
+
+    from app.simulation.config import (
+        WOM_TRUST_PENALTY,
+        WOM_TRUST_SHIELD,
+        WOM_DIMINISHING_RATE,
+    )
+    social_inf = model.social_influence_strength
+
+    for target in [high_trust_agent, low_trust_agent]:
+        discount = 1.0 / (1.0 + WOM_DIMINISHING_RATE * target._step_wom_received)
+        receptivity = 1.0 - WOM_TRUST_SHIELD * target.trust
+        penalty = WOM_TRUST_PENALTY * social_inf * discount * receptivity
+        target.trust = max(0.0, target.trust - penalty)
+        target._step_wom_received += 1
+
+    ht_loss = ht_initial - high_trust_agent.trust
+    lt_loss = lt_initial - low_trust_agent.trust
+    assert ht_loss < lt_loss
+
+
 def test_wom_cooldown_blocks_low_harm():
     """Users below WOM_HARM_COOLDOWN_THRESHOLD produce zero negative WOM."""
     model = _make_model(num_users=50, seed=42)

@@ -258,6 +258,7 @@ class DarkPatternTrustModel(mesa.Model):
             # Reset per-step scratch
             user._step_detected_patterns = []
             user._step_total_harm = 0.0
+            user._step_wom_received = 0
             user.last_exposure = 0.0
 
             # Decay
@@ -311,7 +312,7 @@ class DarkPatternTrustModel(mesa.Model):
             if not user.active:
                 continue
             user.decide_word_of_mouth()
-            if user.negative_wom > 0 and user._step_detected_patterns:
+            if user.negative_wom > 0:
                 edges = user.spread_negative_wom(
                     self.graph, self.social_influence_strength
                 )

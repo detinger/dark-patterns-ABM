@@ -319,14 +319,8 @@ class UserAgent(mesa.Agent):
     ) -> list[dict]:
         """Spread negative word-of-mouth to active neighbours.
 
-        Returns a list of ``{source, target, intensity}`` edge dicts.
-
-        Parameters
-        ----------
-        force : bool
-            If ``True``, skip the ``self.active`` check.  Used for exit WOM
-            where the agent has just churned but still broadcasts a final
-            negative signal.
+        Includes damping, per-step spread limit, diminishing returns on
+        receivers, and trust-scaled receiver impact.
         """
         edges: list[dict] = []
         if (not force and not self.active) or self.network_id is None:
@@ -334,28 +328,45 @@ class UserAgent(mesa.Agent):
 
         rng = self.model.random
         neighbors = list(graph.neighbors(self.network_id))
+        spread_count = 0
 
         for nbr_id in neighbors:
+            if spread_count >= WOM_MAX_NEIGHBORS_PER_STEP:
+                break
+
             nbr = self.model.user_by_network.get(nbr_id)
             if nbr is None or not nbr.active:
                 continue
 
-            wom_prob = self.social_activity * self.complaint_propensity
+            wom_prob = (
+                self.social_activity
+                * self.complaint_propensity
+                * WOM_DAMPING_FACTOR
+            )
             if rng.random() >= wom_prob:
                 continue
+
+            spread_count += 1
+
+            # Receiver skepticism: diminishing returns + trust shield
+            discount = 1.0 / (1.0 + WOM_DIMINISHING_RATE * nbr._step_wom_received)
+            receptivity = 1.0 - WOM_TRUST_SHIELD * nbr.trust
+            impact = discount * receptivity
+
+            nbr._step_wom_received += 1
 
             # Boost neighbour warning awareness (diminishing returns)
             nbr.warning_awareness = min(
                 1.0,
                 nbr.warning_awareness
-                + WOM_AWARENESS_BOOST * (1.0 - nbr.warning_awareness),
+                + WOM_AWARENESS_BOOST * (1.0 - nbr.warning_awareness) * impact,
             )
-            # Penalise neighbour trust
+            # Penalise neighbour trust (scaled by skepticism)
             nbr.trust = clamp(
-                nbr.trust - WOM_TRUST_PENALTY * social_influence_strength
+                nbr.trust - WOM_TRUST_PENALTY * social_influence_strength * impact
             )
-            # Signal + counters
-            nbr.received_negative_signal += 1.0
+            # Signal + counters (scaled by skepticism)
+            nbr.received_negative_signal += 1.0 * impact
             nbr.negative_wom_received += 1
             self.negative_wom_sent += 1
 
