@@ -40,6 +40,7 @@ from app.simulation.config import (
     HIDDEN_EXTRACTION_MULTIPLIER,
     REPUTATION_FLOOR,
     INITIAL_CUMULATIVE_REVENUE,
+    REPUTATION_REVENUE_EXPONENT,
 )
 from app.simulation.metrics import build_all_reporters
 from app.simulation.patterns import DarkPattern
@@ -429,7 +430,11 @@ class DarkPatternTrustModel(mesa.Model):
         """Compute step-level and cumulative economics."""
         active_count = sum(1 for a in self.user_agents if a.active)
 
-        step_base_revenue = active_count * BASE_REVENUE_PER_USER
+        reputation_factor = (
+            self.platform_reputation / 100.0
+        ) ** REPUTATION_REVENUE_EXPONENT
+
+        step_base_revenue = active_count * BASE_REVENUE_PER_USER * reputation_factor
 
         # Dark-pattern revenue: undetected exposures are MORE profitable than
         # detected ones — silent extraction (hidden charges, forced upsells,
@@ -444,7 +449,7 @@ class DarkPatternTrustModel(mesa.Model):
             step_dp_revenue += (
                 detected * dp.intensity * dp.short_term_gain_weight
                 + undetected * dp.intensity * dp.short_term_gain_weight * HIDDEN_EXTRACTION_MULTIPLIER
-            )
+            ) * reputation_factor
 
         # Persist breakdown for metrics / charts
         self._step_base_revenue = step_base_revenue
