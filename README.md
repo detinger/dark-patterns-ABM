@@ -34,7 +34,8 @@ The project is intentionally designed as a **starter**: it already runs, but it 
 
 ### Frontend
 - Modern React dashboard
-- Simulation creation form
+- Simulation creation form with view/edit mode state machine (form locks when viewing a loaded simulation, unlocks for creating new ones)
+- Auto-zero intensity slider when all dark patterns are unchecked
 - KPI cards
 - Tipping-point status panel
 - Time-series charts (trust, users, WOM, churn, reputation, per-step economics, cumulative economics, cost of dark patterns)
@@ -188,9 +189,12 @@ Each simulation step roughly follows this order:
 4. **Recovery**
    - support quality can partially repair trust (harm-dampened effectiveness)
    - partial recovery now works even during mild exposure (proportional to exposure severity)
-   - natural passive recovery: trust drifts slowly toward baseline each step
+   - natural passive recovery: trust drifts slowly toward a harm-adjusted ceiling each step
+   - recovery ceiling = `baseline × (1 − harm)` — accumulated harm permanently depresses maximum recoverable trust
+   - both recovery mechanisms are weakened by active dark-pattern intensity: multiplied by `(1 − intensity)`
 5. **Positive WOM**
-   - satisfied users above the trust threshold spread positive sentiment
+   - only users with zero harm and zero cumulative exposure spread positive sentiment
+   - positive WOM trust boost capped at the harm-adjusted ceiling, not full baseline
 6. **Churn decision**
    - users may leave based on trust, harm, WOM, switching cost
 7. **Natural attrition**
@@ -470,16 +474,15 @@ This mode reuses the same `DarkPatternTrustModel`, keeps the platform visible in
 1. Start the backend
 2. Start the frontend
 3. Open the dashboard in your browser
-4. Create a simulation using the left-hand form
-5. Click:
-   - `Step -1`
-   - `Step +1`
-   - `Run -10`
-   - `Run +10`
-   - `Run Live`
+4. Configure parameters and create a simulation using the left-hand form
+5. Use the run controls below the form:
+   - `Step +1` / `Step -1` for single-step navigation
+   - `Run +10` / `Run -10` for batch steps
+   - `Run Live` for continuous streaming
 6. Choose the live transport in the control panel:
    - `WebSocket` for the default low-overhead live stream
    - `Polling` if you want to compare behavior or need a simpler fallback
+7. Load a saved simulation from the session list — the form updates to show that simulation's parameters (locked). Click `New simulation` to configure and create another run.
 
 ### Mesa SolaraViz path
 
@@ -572,6 +575,7 @@ Good next steps:
 - add harm-dampened recovery [DONE]
 - add realistic WOM spread dynamics (cooldown, ramp-up, damping, receiver skepticism) [DONE]
 - add partial recovery during exposure and natural trust recovery [DONE]
+- fix survivorship trust rebound (harm-adjusted ceiling, intensity-dampened recovery, strict positive WOM gate) [DONE]
 
 ### 2. Improve backend architecture
 Possible upgrades:
@@ -588,6 +592,9 @@ Possible upgrades:
 - parameter presets
 - richer network controls
 - dark mode and polished layout system [DONE]
+- form mode state machine with view/edit separation [DONE]
+- auto-zero intensity when no patterns selected [DONE]
+- form sync from loaded simulation params [DONE]
 
 ### 4. Improve research workflows
 Possible upgrades:

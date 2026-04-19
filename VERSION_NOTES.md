@@ -1,5 +1,30 @@
 # Version Notes
 
+## v1.5.0 — Trust rebound fix and frontend UX redesign
+
+Fixes a survivorship-driven trust rebound where active user trust recovered to near-baseline levels despite ongoing dark-pattern exposure, and redesigns the frontend control panel for clarity.
+
+### Trust recovery fixes
+- **Harm-adjusted recovery ceiling** — trust can no longer recover to full baseline. Recovery caps at `baseline × (1 − harm)`, so accumulated harm permanently depresses the ceiling.
+- **Intensity-dampened recovery** — both customer support and natural trust recovery are multiplied by `(1 − dark_pattern_intensity)`. At 0.40 intensity, recovery runs at 60% effectiveness.
+- **Positive WOM harm gate** — only users with zero harm and zero cumulative exposure can spread positive WOM. Previously, harmed survivors could spread positive sentiment while simultaneously generating negative WOM.
+- **Positive WOM capped at recovery ceiling** — positive WOM boosts are capped at the harm-adjusted ceiling, not the original baseline.
+
+### Config tuning
+- `POSITIVE_WOM_TRUST_BOOST` reduced from 0.30 to 0.10 (per-message boost: +0.018 vs +0.054).
+- `POSITIVE_WOM_BASE_RATE` reduced from 0.20 to 0.10.
+
+### Backend
+- `dark_pattern_intensity` now stored as a model attribute (was only passed through to DarkPattern objects).
+
+### Frontend UX redesign
+- **Form mode state machine** — three modes: `create-fresh` (editable defaults when no sim loaded), `viewing` (disabled form showing loaded sim's params), `create-editing` (editable form for creating a new sim).
+- **Form syncs from backend** — loading a simulation populates all form fields with that simulation's actual parameters.
+- **Auto-zero intensity** — unchecking all dark pattern checkboxes automatically zeros the intensity slider and disables it until at least one pattern is re-enabled.
+- **Clear UX separation** — simulation run controls (step, run, reset, live, export) are visually separated from the creation form. The form is grayed out when viewing, with a "New simulation" button to enter editing mode.
+
+---
+
 ## v1.4.0 — Realistic WOM spread and trust dynamics
 
 WOM spread and trust decline are now gradual and realistic instead of explosive. At medium intensity, trust erodes over months rather than collapsing in the first few weeks.

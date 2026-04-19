@@ -144,7 +144,7 @@ These are not part of `DEFAULTS`, but they should also be calibrated if you want
 | `HARM_DAMPENING_CAP` | Maximum dampening (floor on recovery) | 0.85 | Recovery never drops below 15% |
 | `NATURAL_ATTRITION_PROBABILITY` | Background churn per agent per step | 0.0001 | ~0.01%, independent of dark patterns |
 | `HIDDEN_EXTRACTION_MULTIPLIER` | Revenue multiplier for undetected exposures | 1.5 | Undetected dark patterns extract 50% more |
-| `REPUTATION_FLOOR` | Minimum reputation on 0-100 scale | 5.0 | Even worst platforms retain baseline presence |
+| `REPUTATION_FLOOR` | Minimum reputation on 0-100 scale | 2.0 | Even worst platforms retain baseline presence |
 | `INITIAL_CUMULATIVE_REVENUE` | Starting revenue before dark patterns | 10,000 | Platform already has traction |
 | `REPUTATION_REVENUE_EXPONENT` | Power exponent for reputation-revenue curve | 0.5 | Controls how sensitive revenue is to reputation. 0.5 (square root): moderate loss is mild, severe loss is punishing. Fit to observed revenue-reputation elasticity from platform analytics |
 | `trust_resilience` (per type) | Fraction of trust loss dampened | naive: 0.30-0.50, skeptic: 0.00-0.10, activist: 0.00-0.05 | Fit to vignette responses per user archetype |
@@ -162,6 +162,16 @@ These are not part of `DEFAULTS`, but they should also be calibrated if you want
 | `RECOVERY_EXPOSURE_CEILING` | Step-harm threshold above which recovery is fully suppressed | 0.15 | Controls when customer support is overwhelmed. Fit to support satisfaction data conditioned on exposure severity |
 | `NATURAL_TRUST_RECOVERY` | Passive trust recovery rate per step (fraction of gap to baseline) | 0.004 | Models forgetting/forgiveness. Fit to longitudinal trust recovery after negative experience removal |
 | `BETA_SUPPORT_RECOVERY` | Support-driven recovery rate (tuned from 0.10) | 0.14 | Fit to observed trust recovery rates in post-complaint resolution studies |
+
+### Trust rebound prevention mechanics (v1.5.0)
+
+| Parameter | Meaning | Current value | Calibration note |
+| --- | --- | --- | --- |
+| Recovery ceiling formula | `baseline × (1 − harm)` — harm permanently depresses max recoverable trust | Formula, not a constant | Validate that simulated trust trajectories do not rebound unrealistically after mass churn events |
+| Intensity dampening on recovery | Both support and natural recovery multiplied by `(1 − dark_pattern_intensity)` | Formula using existing intensity | At intensity 0.40, recovery runs at 60%. Validate against retention studies under ongoing dark-pattern exposure |
+| `POSITIVE_WOM_TRUST_BOOST` | Trust increase per positive WOM message (reduced to prevent rebound) | 0.10 | Fit to observed positive peer-effect sizes. Should be roughly equal to discounted negative WOM impact per message |
+| `POSITIVE_WOM_BASE_RATE` | Base probability of spreading positive WOM per neighbor (reduced) | 0.10 | Fit to observed positive review/recommendation rates. Should not overwhelm negative WOM volume |
+| Positive WOM gate | Requires `harm == 0` and `cumulative_exposure == 0` | Strict gate | Users with any dark-pattern exposure history are excluded from spreading positive sentiment |
 
 ## Concrete calibration workflow
 
