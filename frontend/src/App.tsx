@@ -88,6 +88,7 @@ export default function App() {
             liveRunning={liveRunning}
             liveSpeed={liveSpeed}
             liveTransport={liveTransport}
+            activeParams={state?.params ?? null}
           />
           <SimulationList
             simulations={simulations}
