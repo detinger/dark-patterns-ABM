@@ -149,6 +149,20 @@ These are not part of `DEFAULTS`, but they should also be calibrated if you want
 | `REPUTATION_REVENUE_EXPONENT` | Power exponent for reputation-revenue curve | 0.5 | Controls how sensitive revenue is to reputation. 0.5 (square root): moderate loss is mild, severe loss is punishing. Fit to observed revenue-reputation elasticity from platform analytics |
 | `trust_resilience` (per type) | Fraction of trust loss dampened | naive: 0.30-0.50, skeptic: 0.00-0.10, activist: 0.00-0.05 | Fit to vignette responses per user archetype |
 
+### WOM realism mechanics (v1.4.0)
+
+| Parameter | Meaning | Current value | Calibration note |
+| --- | --- | --- | --- |
+| `WOM_HARM_COOLDOWN_THRESHOLD` | Minimum accumulated harm before user spreads negative WOM | 0.08 | Fit to observed delay between first bad experience and first public complaint. Survey or diary data on complaint latency |
+| `WOM_RAMP_RANGE` | Harm range over which WOM ramps from 0% to 100% strength | 0.25 | Controls how quickly frustrated users become vocal. Fit to complaint intensity curves from longitudinal data |
+| `WOM_DAMPING_FACTOR` | Global multiplier on per-neighbor WOM spread probability | 0.35 | Fit to observed peer-complaint transmission rates. Lower values model platforms where complaints are less visible |
+| `WOM_MAX_NEIGHBORS_PER_STEP` | Maximum neighbors a user can spread WOM to per step | 3 | Fit to average number of social contacts a complainant reaches per time unit. Communication diary or social media data |
+| `WOM_DIMINISHING_RATE` | Discount rate for repeated WOM messages on same receiver per step | 0.50 | Models information saturation. Fit to experiments on repeated complaint exposure and marginal trust impact |
+| `WOM_TRUST_SHIELD` | How much current trust shields a receiver from WOM impact | 0.60 | Fit to moderation analysis: do high-trust users discount negative information more? Survey or experiment |
+| `RECOVERY_EXPOSURE_CEILING` | Step-harm threshold above which recovery is fully suppressed | 0.15 | Controls when customer support is overwhelmed. Fit to support satisfaction data conditioned on exposure severity |
+| `NATURAL_TRUST_RECOVERY` | Passive trust recovery rate per step (fraction of gap to baseline) | 0.004 | Models forgetting/forgiveness. Fit to longitudinal trust recovery after negative experience removal |
+| `BETA_SUPPORT_RECOVERY` | Support-driven recovery rate (tuned from 0.10) | 0.14 | Fit to observed trust recovery rates in post-complaint resolution studies |
+
 ## Concrete calibration workflow
 
 ### Phase 1: Build a calibration table

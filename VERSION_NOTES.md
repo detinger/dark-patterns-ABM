@@ -1,5 +1,37 @@
 # Version Notes
 
+## v1.4.0 — Realistic WOM spread and trust dynamics
+
+WOM spread and trust decline are now gradual and realistic instead of explosive. At medium intensity, trust erodes over months rather than collapsing in the first few weeks.
+
+### WOM mechanics
+- **Cooldown threshold** — users must accumulate harm ≥ 0.08 before spreading any negative WOM. No more day-one complaints.
+- **Gradual ramp-up** — once past cooldown, WOM probability scales with accumulated harm (0→100% over harm range 0.08–0.33).
+- **Global damping factor** (0.35) — all per-neighbor spread probabilities reduced to prevent cascade.
+- **Per-step neighbor limit** (max 3) — models realistic social interaction limits.
+- **Activist personality ranges narrowed** — social_activity (0.70–0.95 → 0.45–0.70), complaint_propensity (0.60–0.85 → 0.40–0.60).
+
+### Receiver skepticism
+- **Diminishing returns** — repeated WOM messages in the same step have decreasing impact (1st: 100%, 2nd: 67%, 3rd: 50%).
+- **Trust shield** — high-trust users discount WOM more (trust=0.9 → only 46% impact, trust=0.1 → 94% impact).
+
+### Trust recovery
+- **Partial recovery during exposure** — customer support now provides proportional recovery even when exposed (light exposure: 67% recovery, heavy: 0%).
+- **Natural trust recovery** — small passive drift toward trust baseline each step (0.004 × gap).
+- **BETA_SUPPORT_RECOVERY** tuned to 0.14 (was 0.10).
+
+### Simulation defaults
+- **Default max steps** increased from 104 to 312 (6 years at 1 step/week) to accommodate slower dynamics.
+- **Reputation floor** lowered from 5.0 to 2.0.
+
+### Result at medium intensity (500 users, intensity=0.50)
+- Steps 1–15: zero WOM, trust stable at 0.73
+- Step 30: trust 0.66, WOM building (145/step)
+- Step 50: trust 0.50, 35 churned
+- Step 104: trust 0.40, 178/500 churned (35.6%)
+
+---
+
 ## v1.3.0 — Reputation-discounted revenue and economics visualization
 
 Platform economics now respond realistically to reputation collapse, and the dashboard shows three economics charts telling the full story of dark-pattern consequences.

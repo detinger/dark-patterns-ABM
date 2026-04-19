@@ -182,9 +182,13 @@ Each simulation step roughly follows this order:
    - harm accumulates with logistic saturation (slows as harm approaches 1.0)
 3. **Social diffusion**
    - harm-gated negative word-of-mouth spreads through the network
-   - users with no accumulated harm do not generate negative WOM
+   - WOM requires a cooldown (harm ≥ 0.08) then ramps up gradually with accumulated harm
+   - per-step spread capped at 3 neighbors, with 0.35 global damping factor
+   - receivers experience diminishing returns (repeated messages discount) and trust-shielding (high-trust users are more skeptical of complaints)
 4. **Recovery**
    - support quality can partially repair trust (harm-dampened effectiveness)
+   - partial recovery now works even during mild exposure (proportional to exposure severity)
+   - natural passive recovery: trust drifts slowly toward baseline each step
 5. **Positive WOM**
    - satisfied users above the trust threshold spread positive sentiment
 6. **Churn decision**
@@ -192,7 +196,7 @@ Each simulation step roughly follows this order:
 7. **Natural attrition**
    - small background churn unrelated to dark patterns (~0.01%/step)
 8. **Platform update**
-   - reputation updated (floor at 5.0, cap at 92.0)
+   - reputation updated (floor at 2.0, cap at 92.0)
    - economics: subscription revenue + dark-pattern extraction (undetected exposures earn 1.5x), both scaled by reputation factor `(reputation/100)^0.5`
    - opportunity cost tracked: projected no-DP revenue vs actual revenue
 9. **Optional adaptation**
@@ -240,7 +244,7 @@ Example request body:
   "network_type": "small_world",
   "avg_degree": 8,
   "rewire_prob": 0.08,
-  "max_steps": 104,
+  "max_steps": 312,
   "seed": 42,
   "dark_pattern_intensity": 0.4,
   "pattern_forced_trial": true,
@@ -537,7 +541,7 @@ backend/results/batch_results.csv
 - `network_type = small_world`
 - `avg_degree = 8`
 - `rewire_prob = 0.08`
-- `max_steps = 104`
+- `max_steps = 312` (6 years at 1 step/week)
 
 ### Platform
 - `dark_pattern_intensity = 0.40`
@@ -566,6 +570,8 @@ Good next steps:
 - add harm saturation [DONE]
 - add exposure buildup ramp [DONE]
 - add harm-dampened recovery [DONE]
+- add realistic WOM spread dynamics (cooldown, ramp-up, damping, receiver skepticism) [DONE]
+- add partial recovery during exposure and natural trust recovery [DONE]
 
 ### 2. Improve backend architecture
 Possible upgrades:
