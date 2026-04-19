@@ -286,26 +286,32 @@ class UserAgent(mesa.Agent):
     # ── Word of Mouth ──────────────────────────────────────────────
 
     def decide_word_of_mouth(self) -> float:
-        """Compute negative WOM propensity and cache it.
+        """Compute negative WOM propensity with cooldown and ramp-up.
 
-        Harm-gated: users who haven't experienced any harm yet do not
-        generate negative WOM — people don't complain about dark patterns
-        they haven't been hurt by.  Weights are tilted toward actual harm
-        and trust erosion rather than personality traits alone.
+        Cooldown: users must accumulate harm >= WOM_HARM_COOLDOWN_THRESHOLD
+        before generating any negative WOM.
+        Ramp-up: once past cooldown, WOM scales gradually with harm.
         """
         if not self.active:
             self.negative_wom = 0.0
+            self._wom_ramp_factor = 0.0
             return 0.0
-        if self.harm < 0.01 and self._step_total_harm <= 0:
+        if self.harm < WOM_HARM_COOLDOWN_THRESHOLD:
             self.negative_wom = 0.0
+            self._wom_ramp_factor = 0.0
             return 0.0
+        ramp = min(
+            1.0,
+            (self.harm - WOM_HARM_COOLDOWN_THRESHOLD) / WOM_RAMP_RANGE,
+        )
+        self._wom_ramp_factor = ramp
         base = (
             0.10 * self.social_activity
             + 0.20 * self.complaint_propensity
             + 0.45 * min(1.0, self.harm)
             + 0.25 * (1.0 - self.trust)
         )
-        self.negative_wom = clamp(base)
+        self.negative_wom = clamp(base * ramp)
         return self.negative_wom
 
     def spread_negative_wom(

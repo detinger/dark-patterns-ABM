@@ -362,3 +362,39 @@ def test_agent_has_wom_realism_attributes():
         assert agent._step_wom_received == 0
         assert hasattr(agent, "_wom_ramp_factor")
         assert agent._wom_ramp_factor == 0.0
+
+
+def test_wom_cooldown_blocks_low_harm():
+    """Users below WOM_HARM_COOLDOWN_THRESHOLD produce zero negative WOM."""
+    model = _make_model(num_users=50, seed=42)
+    agent = model.user_agents[0]
+    agent.harm = 0.05  # below 0.08 threshold
+    agent._step_total_harm = 0.01
+    result = agent.decide_word_of_mouth()
+    assert result == 0.0
+    assert agent.negative_wom == 0.0
+    assert agent._wom_ramp_factor == 0.0
+
+
+def test_wom_ramp_partial_at_medium_harm():
+    """Users just past cooldown have reduced WOM via ramp_factor."""
+    model = _make_model(num_users=50, seed=42)
+    agent = model.user_agents[0]
+    agent.harm = 0.20  # past 0.08, ramp = (0.20-0.08)/0.25 = 0.48
+    agent.trust = 0.3
+    agent._step_total_harm = 0.01
+    result = agent.decide_word_of_mouth()
+    assert result > 0.0
+    assert 0.0 < agent._wom_ramp_factor < 1.0
+
+
+def test_wom_ramp_full_at_high_harm():
+    """Users with high harm have ramp_factor = 1.0."""
+    model = _make_model(num_users=50, seed=42)
+    agent = model.user_agents[0]
+    agent.harm = 0.50  # well past 0.08+0.25=0.33
+    agent.trust = 0.2
+    agent._step_total_harm = 0.01
+    result = agent.decide_word_of_mouth()
+    assert agent._wom_ramp_factor == 1.0
+    assert result > 0.0
