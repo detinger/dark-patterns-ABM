@@ -91,3 +91,38 @@ def test_all_named_constants_positive():
         BASE_REVENUE_PER_USER, CHURN_REPLACEMENT_COST,
     ]:
         assert val > 0
+
+
+def test_wom_realism_constants_exist():
+    from app.simulation.config import (
+        WOM_HARM_COOLDOWN_THRESHOLD,
+        WOM_RAMP_RANGE,
+        WOM_DAMPING_FACTOR,
+        WOM_MAX_NEIGHBORS_PER_STEP,
+        WOM_DIMINISHING_RATE,
+        WOM_TRUST_SHIELD,
+        RECOVERY_EXPOSURE_CEILING,
+        NATURAL_TRUST_RECOVERY,
+    )
+    assert WOM_HARM_COOLDOWN_THRESHOLD == 0.08
+    assert WOM_RAMP_RANGE == 0.25
+    assert WOM_DAMPING_FACTOR == 0.35
+    assert WOM_MAX_NEIGHBORS_PER_STEP == 3
+    assert WOM_DIMINISHING_RATE == 0.50
+    assert WOM_TRUST_SHIELD == 0.60
+    assert RECOVERY_EXPOSURE_CEILING == 0.15
+    assert NATURAL_TRUST_RECOVERY == 0.008
+
+
+def test_wom_realism_modified_constants():
+    from app.simulation.config import (
+        WOM_TRUST_PENALTY,
+        GAMMA_SOCIAL_TRUST_LOSS,
+        BETA_SUPPORT_RECOVERY,
+        USER_TYPE_RANGES,
+    )
+    assert WOM_TRUST_PENALTY == 0.20
+    assert GAMMA_SOCIAL_TRUST_LOSS == 0.05
+    assert BETA_SUPPORT_RECOVERY == 0.22
+    assert USER_TYPE_RANGES["activist"]["social_activity"] == (0.45, 0.70)
+    assert USER_TYPE_RANGES["activist"]["complaint_propensity"] == (0.40, 0.60)

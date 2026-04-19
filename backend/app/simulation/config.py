@@ -80,8 +80,8 @@ USER_TYPE_RANGES: dict[str, dict[str, tuple[float, float]]] = {
         "trust_baseline": (0.60, 0.75),
         "digital_literacy": (0.75, 0.95),
         "manipulation_sensitivity": (0.70, 0.90),
-        "social_activity": (0.70, 0.95),
-        "complaint_propensity": (0.60, 0.85),
+        "social_activity": (0.45, 0.70),
+        "complaint_propensity": (0.40, 0.60),
         "switching_cost": (0.25, 0.40),
         "pattern_sensitivity": (1.1, 1.5),
         "trust_resilience": (0.0, 0.05),
@@ -120,9 +120,9 @@ DARK_PATTERN_DEFAULTS: dict[str, dict[str, float]] = {
 # ── 5. Doc formula coefficients ─────────────────────────────────────
 
 ALPHA_EXPOSURE_TO_TRUST = 0.22
-BETA_SUPPORT_RECOVERY = 0.10
+BETA_SUPPORT_RECOVERY = 0.22
 DELTA_EXPOSURE_TO_HARM = 0.18
-GAMMA_SOCIAL_TRUST_LOSS = 0.12
+GAMMA_SOCIAL_TRUST_LOSS = 0.05
 
 THETA0 = -7.00              # calibrated: ~0.08% weekly healthy churn → ~92% 2yr retention
 THETA_TRUST = 2.80          # weight of trust deficit (1 - T)
@@ -147,6 +147,8 @@ INITIAL_HARM_FRACTION = 0.2      # fraction of harm on first exposure
 # becomes progressively less effective at restoring trust.
 HARM_DAMPENING_FACTOR = 1.0      # at harm=1.0, dampening = min(1.0, cap)
 HARM_DAMPENING_CAP = 0.85        # recovery never drops below 15% effectiveness
+RECOVERY_EXPOSURE_CEILING = 0.15
+NATURAL_TRUST_RECOVERY = 0.008
 
 # Natural attrition: background churn unrelated to dark patterns.
 NATURAL_ATTRITION_PROBABILITY = 0.0001  # ~0.01% per agent per step
@@ -173,13 +175,19 @@ EXPOSURE_NOISE_SCALE = 0.05
 NEGATIVE_WOM_DECAY_RATE = 0.05
 POSITIVE_WOM_DECAY_RATE = 0.10
 WOM_AWARENESS_BOOST = 0.15
-WOM_TRUST_PENALTY = 0.5
+WOM_TRUST_PENALTY = 0.20
 POSITIVE_WOM_TRUST_BOOST = 0.3
 POSITIVE_WOM_BASE_RATE = 0.2
 WOM_COOLDOWN_PERIOD = 5
 SATISFIED_TRUST_THRESHOLD = 0.60
 EXIT_WOM_HARM_THRESHOLD = 0.30
 REVIEW_VISIBILITY = 0.35
+WOM_HARM_COOLDOWN_THRESHOLD = 0.08
+WOM_RAMP_RANGE = 0.25
+WOM_DAMPING_FACTOR = 0.35
+WOM_MAX_NEIGHBORS_PER_STEP = 3
+WOM_DIMINISHING_RATE = 0.50
+WOM_TRUST_SHIELD = 0.60
 
 # ── 9. Platform economics ───────────────────────────────────────────
 
