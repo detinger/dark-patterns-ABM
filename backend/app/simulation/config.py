@@ -31,7 +31,7 @@ BETA_SHAPE: float = 5.0
 # ── 1. Model defaults ───────────────────────────────────────────────
 
 DEFAULT_NUM_AGENTS = 500
-DEFAULT_MAX_STEPS = 104  # 2 years, 1 step = 1 week
+DEFAULT_MAX_STEPS = 312  # 6 years, 1 step = 1 week
 DEFAULT_AVG_NODE_DEGREE = 8
 DEFAULT_REWIRING_PROB = 0.08
 DEFAULT_NETWORK_TYPE = "small_world"
