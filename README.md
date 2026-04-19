@@ -139,13 +139,17 @@ Represents one application user with traits such as:
 - complaint propensity
 - switching cost
 - trust baseline
+- trust resilience (type-dependent dampening of trust loss)
+
+Traits are sampled from Beta(5,5) distributions scaled to per-type ranges, producing realistic bell-shaped variation around type midpoints.
 
 Dynamic state includes:
 - current trust
 - perceived fairness
-- cumulative harm
+- cumulative harm (saturates logistically at 1.0)
 - negative WOM
 - active vs churned status
+- per-pattern exposure count (drives exposure buildup ramp)
 
 ### PlatformAgent
 Represents the platform/provider with variables such as:
@@ -172,22 +176,30 @@ Each simulation step roughly follows this order:
 
 1. **Direct exposure**
    - users may encounter active dark patterns
+   - first N encounters deliver partial harm (exposure buildup ramp)
 2. **Trust and harm update**
-   - trust declines, harm accumulates
+   - trust declines (dampened by trust resilience for naive users)
+   - harm accumulates with logistic saturation (slows as harm approaches 1.0)
 3. **Social diffusion**
-   - negative word-of-mouth spreads through the network
+   - harm-gated negative word-of-mouth spreads through the network
+   - users with no accumulated harm do not generate negative WOM
 4. **Recovery**
-   - support quality can partially repair trust
-5. **Churn decision**
+   - support quality can partially repair trust (harm-dampened effectiveness)
+5. **Positive WOM**
+   - satisfied users above the trust threshold spread positive sentiment
+6. **Churn decision**
    - users may leave based on trust, harm, WOM, switching cost
-6. **Platform update**
-   - reputation and revenue proxies are updated
-7. **Optional adaptation**
+7. **Natural attrition**
+   - small background churn unrelated to dark patterns (~0.01%/step)
+8. **Platform update**
+   - reputation updated (floor at 5.0, cap at 92.0)
+   - economics: subscription revenue + dark-pattern extraction (undetected exposures earn 1.5x)
+9. **Optional adaptation**
    - platform may reduce dark pattern intensity if outcomes worsen
 
 ### Formal tipping-point detection
 
-The current implementation records a tipping point only when a rule remains true for **3 consecutive steps**.
+The current implementation records a tipping point only when a rule remains true for **5 consecutive steps**.
 
 - **Trust Collapse**
   - `mean_trust <= 0.50`
@@ -547,8 +559,12 @@ Good next steps:
 - replace bounded normal sampling with proper Beta distributions [DONE]
 - calibrate parameters from literature or survey data [PLAN ADDED]
 - formalize tipping point detection [DONE]
-- store agent-type segments explicitly
-- improve revenue model
+- store agent-type segments explicitly [DONE — 3 types with per-type trait ranges]
+- improve revenue model [DONE — hidden extraction, revenue breakdown, initial revenue]
+- add trust resilience per user type [DONE]
+- add harm saturation [DONE]
+- add exposure buildup ramp [DONE]
+- add harm-dampened recovery [DONE]
 
 ### 2. Improve backend architecture
 Possible upgrades:
@@ -645,6 +661,10 @@ The dashboard now renders the full network plus a platform node and animated int
 
 ---
 
+## Version history
+
+See `VERSION_NOTES.md` for a concise changelog.
+
 ## Recommended next files to add
 
 If you want to continue developing this seriously, the next high-value additions are:
@@ -652,7 +672,6 @@ If you want to continue developing this seriously, the next high-value additions
 - `backend/app/simulation/scenarios.py`
 - `backend/app/simulation/serialization.py`
 - `backend/app/analysis/`
-- `backend/tests/`
 - `frontend/src/pages/ComparisonPage.tsx`
 - `frontend/src/components/ScenarioPresetCards.tsx`
 - `frontend/src/components/ExportButtons.tsx`

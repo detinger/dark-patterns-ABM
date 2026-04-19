@@ -115,9 +115,9 @@ These should ideally be calibrated together from the same churn or switching dat
 
 | Parameter | Meaning | Primary source | Estimation method | Calibration target / note |
 | --- | --- | --- | --- | --- |
-| `theta0` | Churn intercept | Retention / panel dataset | Logistic regression intercept | Baseline churn when predictors are neutral |
+| `theta0` | Churn intercept (currently -7.0) | Retention / panel dataset | Logistic regression intercept | Baseline churn when predictors are neutral. Current value gives ~0.08% weekly healthy churn (~92% 2yr retention) |
 | `theta_trust` | Effect of trust loss on churn | Retention / panel dataset, switching survey | Logistic regression coefficient | Fit effect of lower trust on exit probability |
-| `theta_harm` | Effect of accumulated harm on churn | Same as above | Logistic regression coefficient | Harm should independently raise churn odds |
+| `theta_harm` | Effect of accumulated harm on churn | Same as above | Logistic regression coefficient | Harm should independently raise churn odds. Note: harm now saturates logistically at 1.0 |
 | `theta_social` | Effect of negative WOM on churn | Same as above | Logistic regression coefficient | Fit contagion-mediated exit risk |
 | `theta_switching_cost` | Protective effect of switching cost | Same as above | Logistic regression coefficient | Higher switching cost should reduce churn probability |
 
@@ -131,7 +131,22 @@ These are not part of `DEFAULTS`, but they should also be calibrated if you want
 | Social Contagion threshold (`0.22`) | Persistent negative WOM regime | Review / complaint propagation data | Breakpoint or changepoint analysis | Fit where peer negativity starts spreading faster |
 | Churn Cascade threshold (`0.35`) | Persistent user-loss regime | Cohort retention data | Threshold search | Fit where loss becomes self-reinforcing or hard to reverse |
 | Extractive Divergence rule (`gap >= 20%`, churn `>= 0.15`) | Short-term extraction outpaces sustainable value | Revenue-retention panel data | Joint breakpoint optimization | Fit where revenue still grows short-run but long-run value deteriorates |
-| Persistence window (`3 steps`) | Protection against one-step noise | Time aggregation choice + validation | Stability criterion tuning | Choose the shortest window that avoids false positives |
+| Persistence window (`5 steps`) | Protection against one-step noise | Time aggregation choice + validation | Stability criterion tuning | Choose the shortest window that avoids false positives |
+
+### New mechanics parameters (v1.2.0)
+
+| Parameter | Meaning | Current value | Calibration note |
+| --- | --- | --- | --- |
+| `BETA_SHAPE` | Beta distribution shape for trait sampling | 5.0 | Higher values concentrate traits around type midpoints |
+| `EXPOSURE_BUILDUP_STEPS` | Exposures before full harm | 3 | Fit to observed habituation/sensitisation timelines |
+| `INITIAL_HARM_FRACTION` | Harm fraction on first exposure | 0.2 | First encounter is 20% as harmful as steady-state |
+| `HARM_DAMPENING_FACTOR` | Recovery dampening by accumulated harm | 1.0 | At harm=0.85 recovery drops to 15% effectiveness |
+| `HARM_DAMPENING_CAP` | Maximum dampening (floor on recovery) | 0.85 | Recovery never drops below 15% |
+| `NATURAL_ATTRITION_PROBABILITY` | Background churn per agent per step | 0.0001 | ~0.01%, independent of dark patterns |
+| `HIDDEN_EXTRACTION_MULTIPLIER` | Revenue multiplier for undetected exposures | 1.5 | Undetected dark patterns extract 50% more |
+| `REPUTATION_FLOOR` | Minimum reputation on 0-100 scale | 5.0 | Even worst platforms retain baseline presence |
+| `INITIAL_CUMULATIVE_REVENUE` | Starting revenue before dark patterns | 10,000 | Platform already has traction |
+| `trust_resilience` (per type) | Fraction of trust loss dampened | naive: 0.30-0.50, skeptic: 0.00-0.10, activist: 0.00-0.05 | Fit to vignette responses per user archetype |
 
 ## Concrete calibration workflow
 
