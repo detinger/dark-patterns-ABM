@@ -153,7 +153,26 @@ export function ChartsPanel({ series, tippingPoints }: Props) {
           </ResponsiveContainer>
         </div>
 
-        {/* 6. Cumulative economics — revenue, costs, net value */}
+        {/* 6. Per-step economics — shows the decline */}
+        <div className="chart-card">
+          <h3>Per-step platform economics</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={series}>
+              <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
+              <XAxis dataKey="step" stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
+              <YAxis stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
+              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtCurrency} />
+              <Legend verticalAlign="bottom" wrapperStyle={{ color: 'var(--text-main)', paddingTop: 8 }} />
+              {renderTippingLines(tippingPoints)}
+              <ReferenceLine y={0} stroke="var(--chart-axis)" strokeDasharray="3 3" />
+              <Line type="monotone" dataKey="step_revenue" name="Revenue" stroke="#22c55e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="step_costs" name="Costs" stroke="#ef4444" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="step_profit" name="Profit" stroke="#1e293b" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 7. Cumulative economics — total damage */}
         <div className="chart-card">
           <h3>Cumulative platform economics</h3>
           <ResponsiveContainer width="100%" height={280}>
@@ -167,6 +186,24 @@ export function ChartsPanel({ series, tippingPoints }: Props) {
               <Line type="monotone" dataKey="cumulative_revenue" name="Cumulative revenue" stroke="#22c55e" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="cumulative_costs" name="Cumulative costs" stroke="#ef4444" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="net_value" name="Net value (profit)" stroke="#1e293b" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 8. Opportunity cost — what dark patterns actually cost */}
+        <div className="chart-card">
+          <h3>Cost of dark patterns</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={series}>
+              <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
+              <XAxis dataKey="step" stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
+              <YAxis stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
+              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtCurrency} />
+              <Legend verticalAlign="bottom" wrapperStyle={{ color: 'var(--text-main)', paddingTop: 8 }} />
+              {renderTippingLines(tippingPoints)}
+              <Line type="monotone" dataKey="cumulative_projected_revenue" name="Projected revenue (no DP)" stroke="#22c55e" strokeDasharray="6 3" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="cumulative_revenue" name="Actual revenue" stroke="#f59e0b" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="opportunity_cost" name="Opportunity cost" stroke="#ef4444" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>

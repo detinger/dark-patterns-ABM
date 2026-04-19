@@ -147,6 +147,10 @@ class DarkPatternTrustModel(mesa.Model):
         self._cumulative_revenue: float = INITIAL_CUMULATIVE_REVENUE
         self._cumulative_costs: float = 0.0
         self._net_value: float = INITIAL_CUMULATIVE_REVENUE
+        initial_rep_factor = (self.platform_reputation / 100.0) ** REPUTATION_REVENUE_EXPONENT
+        self._projected_step_revenue: float = len(self.user_agents) * BASE_REVENUE_PER_USER * initial_rep_factor
+        self._cumulative_projected_revenue: float = INITIAL_CUMULATIVE_REVENUE
+        self._opportunity_cost: float = 0.0
 
         # ── Tipping points ────────────────────────────────────────────
         self.tipping_point_persistence: int = TIPPING_POINT_PERSISTENCE
@@ -467,6 +471,8 @@ class DarkPatternTrustModel(mesa.Model):
         self._cumulative_revenue += self._step_revenue
         self._cumulative_costs += self._step_costs
         self._net_value = self._cumulative_revenue - self._cumulative_costs
+        self._cumulative_projected_revenue += self._projected_step_revenue
+        self._opportunity_cost = self._cumulative_projected_revenue - self._cumulative_revenue
 
     def _update_reputation(self) -> None:
         """Update the model-level platform reputation score (0-100 scale)."""

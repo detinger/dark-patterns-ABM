@@ -155,6 +155,14 @@ def net_value(model) -> float:
     return model._net_value
 
 
+def cumulative_projected_revenue(model) -> float:
+    return model._cumulative_projected_revenue
+
+
+def opportunity_cost(model) -> float:
+    return model._opportunity_cost
+
+
 # ── 2. Tipping-point reporters ────────────────────────────────────────────
 
 _TIPPING_POINT_NAMES = [
@@ -350,6 +358,8 @@ def build_all_reporters() -> dict[str, callable]:
     reporters["cumulative_revenue"] = cumulative_revenue
     reporters["cumulative_costs"] = cumulative_costs
     reporters["net_value"] = net_value
+    reporters["cumulative_projected_revenue"] = cumulative_projected_revenue
+    reporters["opportunity_cost"] = opportunity_cost
 
     # -- Tipping-point reporters (8 + 3 = 11) ----------------------------------
     reporters["trust_collapse_triggered"] = trust_collapse_triggered
