@@ -1,5 +1,20 @@
 # Version Notes
 
+## v1.3.0 — Reputation-discounted revenue and economics visualization
+
+Platform economics now respond realistically to reputation collapse, and the dashboard shows three economics charts telling the full story of dark-pattern consequences.
+
+### Simulation mechanics
+- **Reputation-discounted revenue** — revenue per user scales with platform reputation via `(reputation / 100) ^ 0.5`. A platform at reputation 6/100 earns only 25% of its full-reputation rate. Applied to both subscription revenue and dark-pattern extraction revenue.
+- **Opportunity cost tracking** — model tracks projected revenue (all users retained, full initial reputation) vs actual revenue. The gap is the cumulative cost of dark patterns.
+
+### Frontend
+- **Per-step economics chart** — shows step revenue, costs, and profit. Revenue visibly declines as users churn and reputation drops. Profit can go negative.
+- **Cumulative economics chart** — cumulative revenue, costs, and net value. Starts from INITIAL_CUMULATIVE_REVENUE (10,000).
+- **Cost of dark patterns chart** — projected revenue (no DP) vs actual revenue vs opportunity cost. The growing gap directly measures the price of dark patterns.
+
+---
+
 ## v1.2.0 — Realism mechanics and frontend polish
 
 Ported and expanded simulation mechanics from the standalone DarkPatternsABM research project.

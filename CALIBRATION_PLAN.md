@@ -146,6 +146,7 @@ These are not part of `DEFAULTS`, but they should also be calibrated if you want
 | `HIDDEN_EXTRACTION_MULTIPLIER` | Revenue multiplier for undetected exposures | 1.5 | Undetected dark patterns extract 50% more |
 | `REPUTATION_FLOOR` | Minimum reputation on 0-100 scale | 5.0 | Even worst platforms retain baseline presence |
 | `INITIAL_CUMULATIVE_REVENUE` | Starting revenue before dark patterns | 10,000 | Platform already has traction |
+| `REPUTATION_REVENUE_EXPONENT` | Power exponent for reputation-revenue curve | 0.5 | Controls how sensitive revenue is to reputation. 0.5 (square root): moderate loss is mild, severe loss is punishing. Fit to observed revenue-reputation elasticity from platform analytics |
 | `trust_resilience` (per type) | Fraction of trust loss dampened | naive: 0.30-0.50, skeptic: 0.00-0.10, activist: 0.00-0.05 | Fit to vignette responses per user archetype |
 
 ## Concrete calibration workflow

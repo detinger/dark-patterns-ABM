@@ -37,7 +37,7 @@ The project is intentionally designed as a **starter**: it already runs, but it 
 - Simulation creation form
 - KPI cards
 - Tipping-point status panel
-- Time-series charts
+- Time-series charts (trust, users, WOM, churn, reputation, per-step economics, cumulative economics, cost of dark patterns)
 - Full-network visualization with platform node, live legend, colored trust states, and always-on animated interaction effects
 - Live run mode with speed slider and selectable `WebSocket` or `Polling` transport
 - CSV export button for the active simulation
@@ -193,7 +193,8 @@ Each simulation step roughly follows this order:
    - small background churn unrelated to dark patterns (~0.01%/step)
 8. **Platform update**
    - reputation updated (floor at 5.0, cap at 92.0)
-   - economics: subscription revenue + dark-pattern extraction (undetected exposures earn 1.5x)
+   - economics: subscription revenue + dark-pattern extraction (undetected exposures earn 1.5x), both scaled by reputation factor `(reputation/100)^0.5`
+   - opportunity cost tracked: projected no-DP revenue vs actual revenue
 9. **Optional adaptation**
    - platform may reduce dark pattern intensity if outcomes worsen
 
@@ -560,7 +561,7 @@ Good next steps:
 - calibrate parameters from literature or survey data [PLAN ADDED]
 - formalize tipping point detection [DONE]
 - store agent-type segments explicitly [DONE — 3 types with per-type trait ranges]
-- improve revenue model [DONE — hidden extraction, revenue breakdown, initial revenue]
+- improve revenue model [DONE — hidden extraction, revenue breakdown, initial revenue, reputation-discounted revenue, opportunity cost tracking]
 - add trust resilience per user type [DONE]
 - add harm saturation [DONE]
 - add exposure buildup ramp [DONE]
