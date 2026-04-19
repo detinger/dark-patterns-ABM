@@ -550,3 +550,48 @@ def test_natural_recovery_does_not_exceed_baseline():
     pre_trust = agent.trust
     agent.apply_natural_recovery()
     assert agent.trust <= agent.trust_baseline
+
+
+# ── Timeline integration tests ────────────────────────────────────────
+
+
+def test_medium_intensity_trust_collapse_timeline():
+    """At medium intensity, trust should not collapse before step 30."""
+    model = _make_model(
+        num_users=200,
+        dark_pattern_intensity=0.50,
+        pattern_forced_trial=True,
+        pattern_hard_cancel=True,
+        pattern_drip_pricing=True,
+        customer_support_quality=0.30,
+        seed=42,
+    )
+    for step in range(30):
+        model.step()
+        active = [a for a in model.user_agents if a.active]
+        if active:
+            mean_trust = sum(a.trust for a in active) / len(active)
+            assert mean_trust > 0.20, (
+                f"Trust collapsed too fast: {mean_trust:.3f} at step {step+1}"
+            )
+
+
+def test_wom_spread_gradual_not_explosive():
+    """Negative WOM should build gradually, not explode in early steps."""
+    model = _make_model(
+        num_users=200,
+        dark_pattern_intensity=0.50,
+        pattern_forced_trial=True,
+        pattern_hard_cancel=True,
+        pattern_drip_pricing=True,
+        seed=42,
+    )
+    model.step()
+    model.step()
+    wom_step2 = model._cumulative_negative_wom
+    assert wom_step2 < 20, f"WOM too fast at step 2: {wom_step2}"
+
+    for _ in range(8):
+        model.step()
+    wom_step10 = model._cumulative_negative_wom
+    assert wom_step10 < 150, f"WOM too fast at step 10: {wom_step10}"
