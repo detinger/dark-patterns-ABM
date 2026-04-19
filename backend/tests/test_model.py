@@ -182,6 +182,7 @@ def test_datacollector_per_pattern_metrics():
 
 def test_high_intensity_causes_more_churn():
     control = _make_model(
+        num_users=100,
         dark_pattern_intensity=0.0,
         pattern_forced_trial=False,
         pattern_hard_cancel=False,
@@ -189,6 +190,7 @@ def test_high_intensity_causes_more_churn():
         seed=42,
     )
     aggressive = _make_model(
+        num_users=100,
         dark_pattern_intensity=0.8,
         pattern_forced_trial=True,
         pattern_hard_cancel=True,
@@ -480,3 +482,71 @@ def test_wom_ramp_full_at_high_harm():
     result = agent.decide_word_of_mouth()
     assert agent._wom_ramp_factor == 1.0
     assert result > 0.0
+
+
+# ── Trust recovery tests ──────────────────────────────────────────────
+
+
+def test_partial_recovery_during_exposure():
+    """Recovery should work (at reduced rate) even when exposed this step."""
+    model = _make_model(
+        num_users=50, seed=42,
+        customer_support_quality=0.80,
+    )
+    agent = model.user_agents[0]
+    agent.trust = 0.50
+    agent.trust_baseline = 0.80
+    agent.harm = 0.05  # low accumulated harm
+    agent._step_total_harm = 0.05  # light exposure this step
+
+    pre_trust = agent.trust
+    agent.apply_recovery()
+    # With light exposure (0.05 < RECOVERY_EXPOSURE_CEILING=0.15),
+    # partial recovery should occur
+    assert agent.trust > pre_trust
+
+
+def test_no_recovery_during_heavy_exposure():
+    """Heavy exposure should still block recovery."""
+    model = _make_model(
+        num_users=50, seed=42,
+        customer_support_quality=0.80,
+    )
+    agent = model.user_agents[0]
+    agent.trust = 0.50
+    agent.trust_baseline = 0.80
+    agent.harm = 0.05
+    agent._step_total_harm = 0.20  # heavy exposure (above RECOVERY_EXPOSURE_CEILING)
+
+    pre_trust = agent.trust
+    agent.apply_recovery()
+    assert agent.trust == pre_trust
+
+
+def test_natural_trust_recovery():
+    """Trust should recover passively toward baseline even without support."""
+    model = _make_model(
+        num_users=50, seed=42,
+        customer_support_quality=0.0,  # no support
+    )
+    agent = model.user_agents[0]
+    agent.trust = 0.30
+    agent.trust_baseline = 0.80
+    agent._step_total_harm = 0.0
+
+    pre_trust = agent.trust
+    agent.apply_natural_recovery()
+    assert agent.trust > pre_trust
+    assert agent.trust <= agent.trust_baseline
+    # Expected: 0.30 + 0.008 * (0.80 - 0.30) = 0.30 + 0.004 = 0.304
+    assert abs(agent.trust - 0.304) < 0.001
+
+
+def test_natural_recovery_does_not_exceed_baseline():
+    """Natural recovery should not push trust above baseline."""
+    model = _make_model(num_users=50, seed=42)
+    agent = model.user_agents[0]
+    agent.trust = agent.trust_baseline - 0.001
+    pre_trust = agent.trust
+    agent.apply_natural_recovery()
+    assert agent.trust <= agent.trust_baseline

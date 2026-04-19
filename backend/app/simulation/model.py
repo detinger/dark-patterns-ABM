@@ -327,6 +327,10 @@ class DarkPatternTrustModel(mesa.Model):
         for user in self.user_agents:
             user.apply_recovery()
 
+        # ── 3b. Natural trust recovery ───────────────────────────────
+        for user in self.user_agents:
+            user.apply_natural_recovery()
+
         # ── 4. Positive WOM ───────────────────────────────────────────
         # Snapshot positive_wom_sent before the loop so we can track delta
         pos_wom_snapshot: dict[int, int] = {}

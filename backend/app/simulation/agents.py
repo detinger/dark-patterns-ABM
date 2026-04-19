@@ -261,27 +261,47 @@ class UserAgent(mesa.Agent):
     # ── Recovery ───────────────────────────────────────────────────
 
     def apply_recovery(self) -> None:
-        """Partial trust recovery via customer support (doc: β·R_i(t)).
+        """Partial trust recovery via customer support.
 
-        Recovery only applies when the user was NOT exposed to any dark
-        pattern this step — it represents a positive platform experience
-        (e.g. good customer support), not an unconditional drift.
+        Recovery scales down proportionally with exposure this step rather
+        than being blocked entirely.  Heavy exposure still suppresses
+        recovery, but mild exposure allows partial benefit.
         """
         if not self.active:
             return
-        # No recovery if exposed this step
-        if self._step_total_harm > 0:
-            return
         support_quality = self.model.platform.customer_support_quality
-        # Harm dampening: as cumulative harm grows, customer support is less
-        # effective at rebuilding trust — captures desensitisation/cynicism.
-        dampening = 1.0 - min(self.harm * HARM_DAMPENING_FACTOR, HARM_DAMPENING_CAP)
-        recovery = BETA_SUPPORT_RECOVERY * support_quality * dampening
+        # Exposure dampening: scales from 1.0 (no exposure) to 0.0 (heavy)
+        exposure_dampening = 1.0 - min(
+            1.0, self._step_total_harm / RECOVERY_EXPOSURE_CEILING
+        )
+        if exposure_dampening <= 0.0:
+            return
+        # Harm dampening: as cumulative harm grows, support is less effective
+        harm_dampening = 1.0 - min(
+            self.harm * HARM_DAMPENING_FACTOR, HARM_DAMPENING_CAP
+        )
+        recovery = (
+            BETA_SUPPORT_RECOVERY
+            * support_quality
+            * harm_dampening
+            * exposure_dampening
+        )
         recovery = max(0.0, recovery)
         self.trust = min(self.trust_baseline, clamp(self.trust + recovery))
         self.perceived_fairness = clamp(
             self.perceived_fairness + 0.7 * recovery
         )
+
+    def apply_natural_recovery(self) -> None:
+        """Small passive trust recovery toward baseline each step."""
+        if not self.active:
+            return
+        if self.trust < self.trust_baseline:
+            gap = self.trust_baseline - self.trust
+            self.trust = min(
+                self.trust_baseline,
+                self.trust + NATURAL_TRUST_RECOVERY * gap,
+            )
 
     # ── Word of Mouth ──────────────────────────────────────────────
 
