@@ -14,7 +14,7 @@ export const defaultCreatePayload: SimulationCreateRequest = {
   network_type: 'small_world',
   avg_degree: 8,
   rewire_prob: 0.08,
-  max_steps: 104,
+  max_steps: 312,
   seed: 42,
   dark_pattern_intensity: 0.4,
   pattern_forced_trial: true,
