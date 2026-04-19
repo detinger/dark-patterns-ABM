@@ -120,9 +120,9 @@ DARK_PATTERN_DEFAULTS: dict[str, dict[str, float]] = {
 # ── 5. Doc formula coefficients ─────────────────────────────────────
 
 ALPHA_EXPOSURE_TO_TRUST = 0.22
-BETA_SUPPORT_RECOVERY = 0.22
+BETA_SUPPORT_RECOVERY = 0.14
 DELTA_EXPOSURE_TO_HARM = 0.18
-GAMMA_SOCIAL_TRUST_LOSS = 0.05
+GAMMA_SOCIAL_TRUST_LOSS = 0.12
 
 THETA0 = -7.00              # calibrated: ~0.08% weekly healthy churn → ~92% 2yr retention
 THETA_TRUST = 2.80          # weight of trust deficit (1 - T)
@@ -148,7 +148,7 @@ INITIAL_HARM_FRACTION = 0.2      # fraction of harm on first exposure
 HARM_DAMPENING_FACTOR = 1.0      # at harm=1.0, dampening = min(1.0, cap)
 HARM_DAMPENING_CAP = 0.85        # recovery never drops below 15% effectiveness
 RECOVERY_EXPOSURE_CEILING = 0.15
-NATURAL_TRUST_RECOVERY = 0.008
+NATURAL_TRUST_RECOVERY = 0.004
 
 # Natural attrition: background churn unrelated to dark patterns.
 NATURAL_ATTRITION_PROBABILITY = 0.0001  # ~0.01% per agent per step
@@ -175,7 +175,7 @@ EXPOSURE_NOISE_SCALE = 0.05
 NEGATIVE_WOM_DECAY_RATE = 0.05
 POSITIVE_WOM_DECAY_RATE = 0.10
 WOM_AWARENESS_BOOST = 0.15
-WOM_TRUST_PENALTY = 0.20
+WOM_TRUST_PENALTY = 0.50
 POSITIVE_WOM_TRUST_BOOST = 0.3
 POSITIVE_WOM_BASE_RATE = 0.2
 WOM_COOLDOWN_PERIOD = 5

@@ -111,7 +111,7 @@ def test_wom_realism_constants_exist():
     assert WOM_DIMINISHING_RATE == 0.50
     assert WOM_TRUST_SHIELD == 0.60
     assert RECOVERY_EXPOSURE_CEILING == 0.15
-    assert NATURAL_TRUST_RECOVERY == 0.008
+    assert NATURAL_TRUST_RECOVERY == 0.004
 
 
 def test_wom_realism_modified_constants():
@@ -121,8 +121,8 @@ def test_wom_realism_modified_constants():
         BETA_SUPPORT_RECOVERY,
         USER_TYPE_RANGES,
     )
-    assert WOM_TRUST_PENALTY == 0.20
-    assert GAMMA_SOCIAL_TRUST_LOSS == 0.05
-    assert BETA_SUPPORT_RECOVERY == 0.22
+    assert WOM_TRUST_PENALTY == 0.50
+    assert GAMMA_SOCIAL_TRUST_LOSS == 0.12
+    assert BETA_SUPPORT_RECOVERY == 0.14
     assert USER_TYPE_RANGES["activist"]["social_activity"] == (0.45, 0.70)
     assert USER_TYPE_RANGES["activist"]["complaint_propensity"] == (0.40, 0.60)

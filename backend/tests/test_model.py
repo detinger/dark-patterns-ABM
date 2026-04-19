@@ -538,8 +538,8 @@ def test_natural_trust_recovery():
     agent.apply_natural_recovery()
     assert agent.trust > pre_trust
     assert agent.trust <= agent.trust_baseline
-    # Expected: 0.30 + 0.008 * (0.80 - 0.30) = 0.30 + 0.004 = 0.304
-    assert abs(agent.trust - 0.304) < 0.001
+    # Expected: 0.30 + 0.004 * (0.80 - 0.30) = 0.30 + 0.002 = 0.302
+    assert abs(agent.trust - 0.302) < 0.001
 
 
 def test_natural_recovery_does_not_exceed_baseline():
