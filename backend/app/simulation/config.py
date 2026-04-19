@@ -183,6 +183,9 @@ REVIEW_VISIBILITY = 0.35
 
 # ── 9. Platform economics ───────────────────────────────────────────
 
+# Dark patterns are introduced after the platform has existing traction.
+INITIAL_CUMULATIVE_REVENUE = 10_000.0
+
 BASE_REVENUE_PER_USER = 5.0
 CHURN_REPLACEMENT_COST = 5.0
 REPUTATION_DAMAGE_COST = 0.5

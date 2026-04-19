@@ -39,6 +39,7 @@ from app.simulation.config import (
     NATURAL_ATTRITION_PROBABILITY,
     HIDDEN_EXTRACTION_MULTIPLIER,
     REPUTATION_FLOOR,
+    INITIAL_CUMULATIVE_REVENUE,
 )
 from app.simulation.metrics import build_all_reporters
 from app.simulation.patterns import DarkPattern
@@ -142,9 +143,9 @@ class DarkPatternTrustModel(mesa.Model):
         self._step_dp_revenue: float = 0.0
         self._step_costs: float = 0.0
         self._step_profit: float = 0.0
-        self._cumulative_revenue: float = 0.0
+        self._cumulative_revenue: float = INITIAL_CUMULATIVE_REVENUE
         self._cumulative_costs: float = 0.0
-        self._net_value: float = 0.0
+        self._net_value: float = INITIAL_CUMULATIVE_REVENUE
 
         # ── Tipping points ────────────────────────────────────────────
         self.tipping_point_persistence: int = TIPPING_POINT_PERSISTENCE

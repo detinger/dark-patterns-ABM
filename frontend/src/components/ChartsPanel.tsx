@@ -30,16 +30,20 @@ const tooltipStyle = {
   color: 'var(--text-main)',
 }
 
-// Round tooltip values: 4 decimal places for ratios/probabilities, 1 for large numbers.
-const fmtTooltip = (value: number | string) => {
-  if (typeof value !== 'number') return value
-  if (Math.abs(value) < 10) return value.toFixed(4)
-  return value.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-}
+// Tooltip formatters — context-aware for readability
+const fmtPercent = (v: number | string) =>
+  typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : v
+
+const fmtCount = (v: number | string) =>
+  typeof v === 'number' ? Math.round(v).toLocaleString() : v
+
+const fmtScore = (v: number | string) =>
+  typeof v === 'number' ? v.toFixed(1) : v
+
+const fmtCurrency = (v: number | string) =>
+  typeof v === 'number' ? v.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : v
 
 function renderTippingLines(tippingPoints: Record<string, TippingPointState>) {
-  // Labels are intentionally omitted — the TippingPoints panel already explains each trigger.
-  // Inline labels cause overlap when multiple tipping points fire close together.
   return Object.entries(tippingPoints)
     .filter(([, point]) => point.triggered && point.step !== null)
     .map(([key, point]) => (
@@ -70,14 +74,14 @@ export function ChartsPanel({ series, tippingPoints }: Props) {
               <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
               <XAxis dataKey="step" stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
               <YAxis domain={[0, 1]} stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
-              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtTooltip} />
+              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtPercent} />
               <Legend verticalAlign="bottom" wrapperStyle={{ color: 'var(--text-main)', paddingTop: 8 }} />
               {renderTippingLines(tippingPoints)}
               <Line type="monotone" dataKey="mean_trust" name="Mean trust (active)" stroke="#2563eb" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="mean_trust_all" name="Mean trust (all incl. churned)" stroke="#93c5fd" dot={false} />
-              <Line type="monotone" dataKey="avg_trust_skeptic" name="Skeptic" stroke="#f97316" strokeDasharray="5 3" dot={false} />
-              <Line type="monotone" dataKey="avg_trust_naive" name="Naive" stroke="#22c55e" strokeDasharray="5 3" dot={false} />
-              <Line type="monotone" dataKey="avg_trust_activist" name="Activist" stroke="#ef4444" strokeDasharray="5 3" dot={false} />
+              <Line type="monotone" dataKey="trust_skeptic" name="Skeptic" stroke="#f97316" strokeDasharray="5 3" dot={false} />
+              <Line type="monotone" dataKey="trust_naive" name="Naive" stroke="#22c55e" strokeDasharray="5 3" dot={false} />
+              <Line type="monotone" dataKey="trust_activist" name="Activist" stroke="#ef4444" strokeDasharray="5 3" dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -90,7 +94,7 @@ export function ChartsPanel({ series, tippingPoints }: Props) {
               <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
               <XAxis dataKey="step" stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
               <YAxis stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
-              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtTooltip} />
+              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtCount} />
               <Legend verticalAlign="bottom" wrapperStyle={{ color: 'var(--text-main)', paddingTop: 8 }} />
               {renderTippingLines(tippingPoints)}
               <Line type="monotone" dataKey="active_users" name="Active users" stroke="#0d9488" strokeWidth={2} dot={false} />
@@ -106,7 +110,7 @@ export function ChartsPanel({ series, tippingPoints }: Props) {
               <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
               <XAxis dataKey="step" stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
               <YAxis stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
-              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtTooltip} />
+              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtCount} />
               <Legend verticalAlign="bottom" wrapperStyle={{ color: 'var(--text-main)', paddingTop: 8 }} />
               {renderTippingLines(tippingPoints)}
               <Line type="monotone" dataKey="step_negative_wom_count" name="Negative WOM" stroke="#ef4444" dot={false} />
@@ -123,12 +127,12 @@ export function ChartsPanel({ series, tippingPoints }: Props) {
               <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
               <XAxis dataKey="step" stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
               <YAxis stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
-              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtTooltip} />
+              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtCount} />
               <Legend verticalAlign="bottom" wrapperStyle={{ color: 'var(--text-main)', paddingTop: 8 }} />
               {renderTippingLines(tippingPoints)}
-              <Line type="monotone" dataKey="churn_count_skeptic" name="Skeptic" stroke="#f97316" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="churn_count_naive" name="Naive" stroke="#22c55e" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="churn_count_activist" name="Activist" stroke="#ef4444" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="churned_skeptic" name="Skeptic" stroke="#f97316" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="churned_naive" name="Naive" stroke="#22c55e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="churned_activist" name="Activist" stroke="#ef4444" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -141,7 +145,7 @@ export function ChartsPanel({ series, tippingPoints }: Props) {
               <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
               <XAxis dataKey="step" stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
               <YAxis domain={[0, 100]} stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
-              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtTooltip} />
+              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtScore} />
               <Legend verticalAlign="bottom" wrapperStyle={{ color: 'var(--text-main)', paddingTop: 8 }} />
               {renderTippingLines(tippingPoints)}
               <Line type="monotone" dataKey="platform_reputation" name="Reputation (0-100)" stroke="#9333ea" strokeWidth={2} dot={false} />
@@ -157,7 +161,7 @@ export function ChartsPanel({ series, tippingPoints }: Props) {
               <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
               <XAxis dataKey="step" stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
               <YAxis stroke="var(--chart-axis)" tick={{ fill: 'var(--chart-axis)' }} />
-              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtTooltip} />
+              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'var(--text-main)' }} formatter={fmtCurrency} />
               <Legend verticalAlign="bottom" wrapperStyle={{ color: 'var(--text-main)', paddingTop: 8 }} />
               {renderTippingLines(tippingPoints)}
               <ReferenceLine y={0} stroke="var(--chart-axis)" strokeDasharray="3 3" />

@@ -41,9 +41,12 @@ export interface Metrics {
   cumulative_costs: number
   net_value: number
   platform_reputation: number
-  avg_trust_skeptic: number
-  avg_trust_naive: number
-  avg_trust_activist: number
+  trust_skeptic: number
+  trust_naive: number
+  trust_activist: number
+  churned_skeptic: number
+  churned_naive: number
+  churned_activist: number
 }
 
 export interface NetworkNode {
