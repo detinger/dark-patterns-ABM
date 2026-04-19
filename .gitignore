@@ -17,3 +17,5 @@ backend/results/
 .vscode/
 .idea/
 .DS_Store
+
+docs/

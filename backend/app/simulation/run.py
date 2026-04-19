@@ -58,7 +58,7 @@ def run_scenario(
     tuple[DarkPatternTrustModel, pd.DataFrame]
     """
     scenario = SCENARIOS[scenario_name]
-    model = DarkPatternTrustModel(
+    kwargs = dict(
         num_users=num_agents,
         seed=seed,
         max_steps=max_steps,
@@ -69,6 +69,11 @@ def run_scenario(
         adaptive_platform=scenario["adaptive_platform"],
         customer_support_quality=scenario["customer_support_quality"],
     )
+    if "social_influence_strength" in scenario:
+        kwargs["social_influence_strength"] = scenario["social_influence_strength"]
+    if "retention_bonus" in scenario:
+        kwargs["retention_bonus"] = scenario["retention_bonus"]
+    model = DarkPatternTrustModel(**kwargs)
     for _ in range(max_steps):
         model.step()
     data = model.datacollector.get_model_vars_dataframe()

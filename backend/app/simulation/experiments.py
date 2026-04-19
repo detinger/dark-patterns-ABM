@@ -76,6 +76,10 @@ def _run_model(
     )
     if network_type is not None:
         kwargs["network_type"] = network_type
+    if "social_influence_strength" in scenario:
+        kwargs["social_influence_strength"] = scenario["social_influence_strength"]
+    if "retention_bonus" in scenario:
+        kwargs["retention_bonus"] = scenario["retention_bonus"]
 
     model = DarkPatternTrustModel(**kwargs)
     for _ in range(max_steps):

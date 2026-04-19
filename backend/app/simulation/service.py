@@ -40,6 +40,10 @@ class SimulationService:
             params["pattern_drip_pricing"] = scenario["patterns"]["drip_pricing"]
             params["adaptive_platform"] = scenario["adaptive_platform"]
             params["customer_support_quality"] = scenario["customer_support_quality"]
+            if "social_influence_strength" in scenario:
+                params["social_influence_strength"] = scenario["social_influence_strength"]
+            if "retention_bonus" in scenario:
+                params["retention_bonus"] = scenario["retention_bonus"]
 
         simulation_id = str(uuid4())
         model = self._build_model_at_step(params, 0)
