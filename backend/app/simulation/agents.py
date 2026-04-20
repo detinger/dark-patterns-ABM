@@ -51,6 +51,7 @@ from app.simulation.config import (
     WOM_TRUST_SHIELD,
     RECOVERY_EXPOSURE_CEILING,
     NATURAL_TRUST_RECOVERY,
+    CHURN_TRUST_DEAD_ZONE,
 )
 from app.simulation.patterns import (
     DarkPattern,
@@ -463,9 +464,10 @@ class UserAgent(mesa.Agent):
             return 1.0
 
         retention_bonus = getattr(self.model, "retention_bonus", 0.0)
+        trust_deficit = max(0.0, (1.0 - self.trust) - CHURN_TRUST_DEAD_ZONE)
         z = (
             THETA0
-            + THETA_TRUST * (1.0 - self.trust)
+            + THETA_TRUST * trust_deficit
             + THETA_HARM * self.harm
             + THETA_SOCIAL * self.negative_wom
             - THETA_SWITCHING_COST * self.switching_cost

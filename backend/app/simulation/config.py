@@ -124,11 +124,12 @@ BETA_SUPPORT_RECOVERY = 0.14
 DELTA_EXPOSURE_TO_HARM = 0.18
 GAMMA_SOCIAL_TRUST_LOSS = 0.12
 
-THETA0 = -7.00              # calibrated: ~0.08% weekly healthy churn → ~92% 2yr retention
-THETA_TRUST = 2.80          # weight of trust deficit (1 - T)
+THETA0 = -8.00              # baseline intercept: with dead-zone, healthy platforms see ~3-5% 6yr churn
+THETA_TRUST = 3.50          # weight of trust deficit (after dead-zone subtraction)
 THETA_HARM = 1.90           # weight of cumulative harm
 THETA_SOCIAL = 1.20         # weight of negative WOM exposure
 THETA_SWITCHING_COST = 1.60 # protective effect of switching costs
+CHURN_TRUST_DEAD_ZONE = 0.30  # trust deficit below this threshold doesn't drive churn
 
 # Per-step caps: the doc formula assumes ONE aggregated exposure per step,
 # but 3 patterns can each apply alpha/delta independently, tripling the

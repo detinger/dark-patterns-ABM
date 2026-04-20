@@ -40,6 +40,7 @@ export interface Metrics {
   cumulative_revenue: number
   cumulative_costs: number
   net_value: number
+  cumulative_projected_revenue: number
   platform_reputation: number
   trust_skeptic: number
   trust_naive: number

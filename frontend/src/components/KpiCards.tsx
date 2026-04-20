@@ -13,14 +13,14 @@ const fmtMoney = (v: number) => v.toLocaleString('en-US', { minimumFractionDigit
 export function KpiCards({ metrics, steps, maxSteps }: Props) {
   const items: [string, string][] = [
     ['Step', `${steps} / ${maxSteps}`],
-    ['Mean trust', fmtPct(metrics.mean_trust)],
+    ['Mean trust (incl. churned)', fmtPct(metrics.mean_trust_all)],
     ['Mean harm', fmtPct(metrics.mean_harm)],
     ['Weekly churn', fmtPct(metrics.churn_rate)],
     ['Cumulative churn', fmtPct(metrics.cumulative_churn)],
     ['Negative WOM', fmtPct(metrics.negative_wom_rate)],
     ['Reputation (0–100)', fmtScore(metrics.platform_reputation)],
     ['Cumulative revenue', fmtMoney(metrics.cumulative_revenue)],
-    ['Projected revenue', fmtMoney(metrics.long_term_revenue ?? 0)],
+    ['Cumulative Projected Revenue', fmtMoney(metrics.cumulative_projected_revenue ?? 0)],
   ]
 
   return (
