@@ -115,8 +115,9 @@ These should ideally be calibrated together from the same churn or switching dat
 
 | Parameter | Meaning | Primary source | Estimation method | Calibration target / note |
 | --- | --- | --- | --- | --- |
-| `theta0` | Churn intercept (currently -7.0) | Retention / panel dataset | Logistic regression intercept | Baseline churn when predictors are neutral. Current value gives ~0.08% weekly healthy churn (~92% 2yr retention) |
-| `theta_trust` | Effect of trust loss on churn | Retention / panel dataset, switching survey | Logistic regression coefficient | Fit effect of lower trust on exit probability |
+| `theta0` | Churn intercept (currently -8.0) | Retention / panel dataset | Logistic regression intercept | Baseline churn when predictors are neutral. With the dead zone, healthy platforms see ~3-5% cumulative churn over 6 years |
+| `theta_trust` | Effect of trust deficit on churn (currently 3.50) | Retention / panel dataset, switching survey | Logistic regression coefficient | Applied to `max(0, (1-trust) - dead_zone)`. Raised from 2.80 to compensate for the dead zone reducing effective deficit range |
+| `churn_trust_dead_zone` | Trust deficit below which trust does not drive churn (currently 0.30) | Survey trust distributions, retention breakpoints | Threshold analysis | Users with trust above ~0.70 experience zero trust-driven churn. Fit to where satisfaction surveys show users as "satisfied" |
 | `theta_harm` | Effect of accumulated harm on churn | Same as above | Logistic regression coefficient | Harm should independently raise churn odds. Note: harm now saturates logistically at 1.0 |
 | `theta_social` | Effect of negative WOM on churn | Same as above | Logistic regression coefficient | Fit contagion-mediated exit risk |
 | `theta_switching_cost` | Protective effect of switching cost | Same as above | Logistic regression coefficient | Higher switching cost should reduce churn probability |
@@ -172,6 +173,14 @@ These are not part of `DEFAULTS`, but they should also be calibrated if you want
 | `POSITIVE_WOM_TRUST_BOOST` | Trust increase per positive WOM message (reduced to prevent rebound) | 0.10 | Fit to observed positive peer-effect sizes. Should be roughly equal to discounted negative WOM impact per message |
 | `POSITIVE_WOM_BASE_RATE` | Base probability of spreading positive WOM per neighbor (reduced) | 0.10 | Fit to observed positive review/recommendation rates. Should not overwhelm negative WOM volume |
 | Positive WOM gate | Requires `harm == 0` and `cumulative_exposure == 0` | Strict gate | Users with any dark-pattern exposure history are excluded from spreading positive sentiment |
+
+### Churn calibration mechanics (v1.6.0)
+
+| Parameter | Meaning | Current value | Calibration note |
+| --- | --- | --- | --- |
+| `CHURN_TRUST_DEAD_ZONE` | Trust deficit subtracted before applying trust weight in churn formula | 0.30 | Users with trust > 0.70 have zero trust-driven churn. Fit to survey data on user satisfaction thresholds — the point below which dissatisfaction begins driving exit intent |
+| `THETA0` (updated) | Churn intercept lowered from -7.00 to -8.00 | -8.00 | With the dead zone, healthy platforms see ~6.6% cumulative churn over 312 steps (was 26.2%). Fit to observed retention rates for platforms without manipulative patterns |
+| `THETA_TRUST` (updated) | Trust weight raised from 2.80 to 3.50 | 3.50 | Compensates for the dead zone reducing the effective trust deficit range. Dark-pattern-exposed users (trust < 0.40) still experience strong churn pressure |
 
 ## Concrete calibration workflow
 

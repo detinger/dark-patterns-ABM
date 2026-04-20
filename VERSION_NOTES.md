@@ -1,5 +1,25 @@
 # Version Notes
 
+## v1.6.0 — Churn calibration and KPI refinements
+
+Fixes unrealistically high baseline churn for healthy platforms and updates dashboard KPI labels for clarity.
+
+### Churn model calibration
+- **Trust-deficit dead zone** (`CHURN_TRUST_DEAD_ZONE = 0.30`) — the logistic churn formula now subtracts a dead zone from the trust deficit before applying the trust weight. Users with trust above ~0.70 experience zero trust-driven churn pressure. Only when trust drops meaningfully does the deficit start driving exits.
+- **Intercept lowered** (`THETA0`: -7.00 → -8.00) — reduces the baseline churn probability for all users, so healthy platforms maintain a near-steady active user base.
+- **Trust weight raised** (`THETA_TRUST`: 2.80 → 3.50) — compensates for the dead zone so that low-trust users (from dark-pattern exposure) still churn at a meaningful rate.
+
+### Result
+- Healthy platform (intensity=0): **6.6% cumulative churn** over 312 steps (was 26.2%)
+- Dark-pattern platform (intensity=0.40): **53.2% cumulative churn** (strong contrast preserved)
+
+### Frontend
+- **Mean trust KPI** renamed to **Mean trust (incl. churned)** and now shows `mean_trust_all` (all users including churned) instead of active-only trust.
+- **Projected revenue KPI** renamed to **Cumulative Projected Revenue** and now shows `cumulative_projected_revenue` instead of `long_term_revenue`.
+- `cumulative_projected_revenue` added to TypeScript `Metrics` interface.
+
+---
+
 ## v1.5.0 — Trust rebound fix and frontend UX redesign
 
 Fixes a survivorship-driven trust rebound where active user trust recovered to near-baseline levels despite ongoing dark-pattern exposure, and redesigns the frontend control panel for clarity.

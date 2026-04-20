@@ -196,7 +196,9 @@ Each simulation step roughly follows this order:
    - only users with zero harm and zero cumulative exposure spread positive sentiment
    - positive WOM trust boost capped at the harm-adjusted ceiling, not full baseline
 6. **Churn decision**
-   - users may leave based on trust, harm, WOM, switching cost
+   - logistic churn model with a trust-deficit dead zone: users whose trust is above ~0.70 experience no trust-driven churn pressure
+   - only when trust drops below the dead zone threshold does the trust deficit contribute to churn probability
+   - harm, negative WOM, and switching cost remain independent churn drivers
 7. **Natural attrition**
    - small background churn unrelated to dark patterns (~0.01%/step)
 8. **Platform update**
@@ -576,6 +578,7 @@ Good next steps:
 - add realistic WOM spread dynamics (cooldown, ramp-up, damping, receiver skepticism) [DONE]
 - add partial recovery during exposure and natural trust recovery [DONE]
 - fix survivorship trust rebound (harm-adjusted ceiling, intensity-dampened recovery, strict positive WOM gate) [DONE]
+- calibrate baseline churn so healthy platforms maintain steady user base (trust-deficit dead zone, intercept tuning) [DONE]
 
 ### 2. Improve backend architecture
 Possible upgrades:
