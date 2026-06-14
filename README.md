@@ -666,31 +666,26 @@ Under **Settings -> Networking**, generate a Railway domain for both services.
 
 ### 3. Connect the services
 
-Add this variable to the `frontend` service:
+Add this runtime variable to the `frontend` service:
 
 ```env
-VITE_API_BASE=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}/api
+API_UPSTREAM=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}
 ```
 
-Enter the value without surrounding quotes. The `backend` part of the reference must exactly match the Railway backend service name. If the reference does not resolve, use the generated backend domain directly:
+Enter the value without surrounding quotes or a trailing `/api`. The `backend` part of the reference must exactly match the Railway backend service name. If the reference does not resolve, use the generated backend origin directly:
 
 ```env
-VITE_API_BASE=https://your-backend.up.railway.app/api
+API_UPSTREAM=https://your-backend.up.railway.app
 ```
 
-Add this variable to the `backend` service:
-
-```env
-CORS_ORIGINS=https://${{frontend.RAILWAY_PUBLIC_DOMAIN}}
-```
-
-The service names in these reference variables must match the Railway service names. Redeploy both services after adding the variables because `VITE_API_BASE` is compiled into the frontend build.
+The deployed frontend sends browser requests to its own `/api` path, and Caddy forwards them to `API_UPSTREAM`. This avoids cross-origin browser requests and allows the upstream to be changed at runtime. Remove any old `VITE_API_BASE` variable from the frontend service, then deploy the staged variable change and redeploy the frontend.
 
 ### 4. Verify the deployment
 
 - Backend health: `https://<backend-domain>/api/health`
 - Backend API docs: `https://<backend-domain>/docs`
 - Frontend: `https://<frontend-domain>/`
+- Proxied health check: `https://<frontend-domain>/api/health`
 
 The backend Railway config starts Uvicorn on Railway's injected `PORT`. The frontend Dockerfile builds the Vite app and serves it with Caddy on the same injected port.
 

@@ -5,9 +5,13 @@ import type {
   TimeseriesResponse,
 } from '../types'
 
-const DEFAULT_API_BASE = 'http://localhost:8000/api'
+const LOCAL_API_BASE = 'http://localhost:8000/api'
 
 function getApiBase() {
+  if (!import.meta.env.DEV) {
+    return '/api'
+  }
+
   const configuredBase = String(import.meta.env.VITE_API_BASE ?? '').trim()
   const unquotedBase =
     configuredBase.length >= 2 &&
@@ -16,7 +20,7 @@ function getApiBase() {
       ? configuredBase.slice(1, -1).trim()
       : configuredBase
 
-  return (unquotedBase || DEFAULT_API_BASE).replace(/\/+$/, '')
+  return (unquotedBase || LOCAL_API_BASE).replace(/\/+$/, '')
 }
 
 function getApiUrl(path: string) {
@@ -24,7 +28,7 @@ function getApiUrl(path: string) {
 
   if (apiBase.includes('${{')) {
     throw new Error(
-      'VITE_API_BASE contains an unresolved Railway variable. Set it to the backend public URL ending in /api, then redeploy the frontend.',
+      'VITE_API_BASE contains an unresolved variable. Set it to the local backend URL ending in /api.',
     )
   }
 
@@ -38,7 +42,7 @@ function getApiUrl(path: string) {
     return url
   } catch {
     throw new Error(
-      'VITE_API_BASE is not a valid URL. Use a value such as https://your-backend.up.railway.app/api, without quotes.',
+      'VITE_API_BASE is not a valid URL. Use a value such as http://localhost:8000/api, without quotes.',
     )
   }
 }
