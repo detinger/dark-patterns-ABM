@@ -5,10 +5,46 @@ import type {
   TimeseriesResponse,
 } from '../types'
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000/api'
+const DEFAULT_API_BASE = 'http://localhost:8000/api'
+
+function getApiBase() {
+  const configuredBase = String(import.meta.env.VITE_API_BASE ?? '').trim()
+  const unquotedBase =
+    configuredBase.length >= 2 &&
+    configuredBase[0] === configuredBase[configuredBase.length - 1] &&
+    (configuredBase[0] === '"' || configuredBase[0] === "'")
+      ? configuredBase.slice(1, -1).trim()
+      : configuredBase
+
+  return (unquotedBase || DEFAULT_API_BASE).replace(/\/+$/, '')
+}
+
+function getApiUrl(path: string) {
+  const apiBase = getApiBase()
+
+  if (apiBase.includes('${{')) {
+    throw new Error(
+      'VITE_API_BASE contains an unresolved Railway variable. Set it to the backend public URL ending in /api, then redeploy the frontend.',
+    )
+  }
+
+  try {
+    const url = new URL(`${apiBase}${path}`, window.location.origin)
+
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      throw new Error('unsupported protocol')
+    }
+
+    return url
+  } catch {
+    throw new Error(
+      'VITE_API_BASE is not a valid URL. Use a value such as https://your-backend.up.railway.app/api, without quotes.',
+    )
+  }
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(getApiUrl(path), {
     headers: {
       'Content-Type': 'application/json',
       ...(options?.headers ?? {}),
@@ -25,7 +61,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 async function download(path: string): Promise<Blob> {
-  const response = await fetch(`${API_BASE}${path}`)
+  const response = await fetch(getApiUrl(path))
 
   if (!response.ok) {
     const text = await response.text()
@@ -33,10 +69,6 @@ async function download(path: string): Promise<Blob> {
   }
 
   return response.blob()
-}
-
-function getApiUrl(path: string) {
-  return new URL(`${API_BASE}${path}`, window.location.origin)
 }
 
 export const api = {

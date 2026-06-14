@@ -672,6 +672,12 @@ Add this variable to the `frontend` service:
 VITE_API_BASE=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}/api
 ```
 
+Enter the value without surrounding quotes. The `backend` part of the reference must exactly match the Railway backend service name. If the reference does not resolve, use the generated backend domain directly:
+
+```env
+VITE_API_BASE=https://your-backend.up.railway.app/api
+```
+
 Add this variable to the `backend` service:
 
 ```env
