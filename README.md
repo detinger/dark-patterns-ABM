@@ -666,19 +666,19 @@ Under **Settings -> Networking**, generate a Railway domain for both services.
 
 ### 3. Connect the services
 
-Add this runtime variable to the `frontend` service:
-
-```env
-API_UPSTREAM=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}
-```
-
-Enter the value without surrounding quotes or a trailing `/api`. The `backend` part of the reference must exactly match the Railway backend service name. If the reference does not resolve, use the generated backend origin directly:
+First open the backend's generated domain directly and confirm that `/api/health` returns `{"status":"ok"}`. Then add this runtime variable to the `frontend` service using the actual backend domain shown under **Settings -> Networking**:
 
 ```env
 API_UPSTREAM=https://your-backend.up.railway.app
 ```
 
-The deployed frontend sends browser requests to its own `/api` path, and Caddy forwards them to `API_UPSTREAM`. This avoids cross-origin browser requests and allows the upstream to be changed at runtime. Remove any old `VITE_API_BASE` variable from the frontend service, then deploy the staged variable change and redeploy the frontend.
+Enter the value without surrounding quotes or a trailing `/api`. A Railway reference variable also works when the backend service is named exactly `backend`:
+
+```env
+API_UPSTREAM=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}
+```
+
+The deployed frontend sends browser requests to its own `/api` path, and Caddy forwards them to `API_UPSTREAM`. This avoids cross-origin browser requests and allows the upstream to be changed at runtime. Remove any old `VITE_API_BASE` variable from the frontend service, deploy the staged variable change, and redeploy the frontend. The frontend health check uses the proxied backend health endpoint, so Railway will reject a deployment when `API_UPSTREAM` is missing or unreachable.
 
 ### 4. Verify the deployment
 
@@ -688,6 +688,8 @@ The deployed frontend sends browser requests to its own `/api` path, and Caddy f
 - Proxied health check: `https://<frontend-domain>/api/health`
 
 The backend Railway config starts Uvicorn on Railway's injected `PORT`. The frontend Dockerfile builds the Vite app and serves it with Caddy on the same injected port.
+
+If the proxied health check returns `502`, Caddy cannot reach `API_UPSTREAM`. Confirm that the variable is attached to the `frontend` service in the same environment, that its staged change was deployed, and that the direct backend health URL works.
 
 ---
 
