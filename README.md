@@ -645,6 +645,51 @@ The dashboard now renders the full network plus a platform node and animated int
 
 ---
 
+## Deploying on Railway
+
+This repository is an isolated monorepo, so deploy the frontend and backend as two Railway services connected to the same GitHub repository.
+
+### 1. Create the services
+
+Create two services named `backend` and `frontend`. For each service, open **Settings** and configure:
+
+| Service | Root Directory | Railway Config File | Watch Path |
+| --- | --- | --- | --- |
+| `backend` | `/backend` | `/backend/railway.toml` | `/backend/**` |
+| `frontend` | `/frontend` | `/frontend/railway.toml` | `/frontend/**` |
+
+The config-file paths are repository-absolute because Railway does not resolve them relative to the service Root Directory.
+
+### 2. Generate public domains
+
+Under **Settings -> Networking**, generate a Railway domain for both services.
+
+### 3. Connect the services
+
+Add this variable to the `frontend` service:
+
+```env
+VITE_API_BASE=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}/api
+```
+
+Add this variable to the `backend` service:
+
+```env
+CORS_ORIGINS=https://${{frontend.RAILWAY_PUBLIC_DOMAIN}}
+```
+
+The service names in these reference variables must match the Railway service names. Redeploy both services after adding the variables because `VITE_API_BASE` is compiled into the frontend build.
+
+### 4. Verify the deployment
+
+- Backend health: `https://<backend-domain>/api/health`
+- Backend API docs: `https://<backend-domain>/docs`
+- Frontend: `https://<frontend-domain>/`
+
+The backend Railway config starts Uvicorn on Railway's injected `PORT`. The frontend Dockerfile builds the Vite app and serves it with Caddy on the same injected port.
+
+---
+
 ## Recommended next files to add
 
 If you want to continue developing this seriously, the next high-value additions are:
