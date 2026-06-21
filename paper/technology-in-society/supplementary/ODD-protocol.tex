@@ -65,8 +65,8 @@ and scales; (3) Process overview and scheduling; (4) Design concepts;
 The purpose of the model is to study, as an emergent dynamic process, how a
 digital platform's use of dark patterns degrades the trust relationship between
 the platform and a heterogeneous population of users, and how that degradation
-translates --- through individual trust erosion, social transmission, and
-exit decisions --- into platform-level outcomes (churn, reputation loss, and a
+translates, through individual trust erosion, social transmission, and
+exit decisions, into platform-level outcomes (churn, reputation loss, and a
 gap between short-term extractive revenue and forgone long-term revenue). The
 model is explanatory rather than predictive: it is designed to expose the
 qualitative regimes and threshold behaviours that arise when manipulative design
@@ -83,13 +83,13 @@ implemented as explicitly tracked \emph{tipping points} (see
 Section~\ref{sec:tipping} for thresholds):
 
 \begin{enumerate}
-  \item \textbf{Trust Collapse} --- the gradual, then accelerating, decline of
+  \item \textbf{Trust Collapse}: the gradual, then accelerating, decline of
   mean user trust toward a low equilibrium when dark-pattern intensity is high.
-  \item \textbf{Social Contagion} --- a self-reinforcing rise in negative
+  \item \textbf{Social Contagion}: a self-reinforcing rise in negative
   word-of-mouth (WOM) as harmed users warn their network neighbours.
-  \item \textbf{Churn Cascade} --- the conversion of trust loss and social
+  \item \textbf{Churn Cascade}: the conversion of trust loss and social
   contagion into a large cumulative fraction of users abandoning the platform.
-  \item \textbf{Extractive Divergence} --- the widening gap between short-term
+  \item \textbf{Extractive Divergence}: the widening gap between short-term
   revenue (boosted by dark-pattern extraction) and discounted long-term revenue,
   co-occurring with sustained churn; the signature of a platform that is
   ``cashing out'' its user base.
@@ -109,20 +109,20 @@ experiences) and activists/skeptics reacting fastest.
 The model contains the following entity types:
 
 \begin{itemize}
-  \item \textbf{User agents} (\code{UserAgent}) --- heterogeneous consumers, one
+  \item \textbf{User agents} (\code{UserAgent}): heterogeneous consumers, one
   per network node. The default population is $N = 500$ (\code{DEFAULT\_NUM\_AGENTS}).
   Each user is assigned a discrete \emph{user type} (skeptic, naive, or activist)
   that fixes the ranges from which its individual traits are drawn.
-  \item \textbf{Platform agent} (\code{PlatformAgent}) --- a single platform
+  \item \textbf{Platform agent} (\code{PlatformAgent}): a single platform
   operator that deploys dark patterns at a chosen global intensity, provides
   customer support, and optionally adapts its strategy.
-  \item \textbf{Dark-pattern objects} (\code{DarkPattern}) --- three immutable
+  \item \textbf{Dark-pattern objects} (\code{DarkPattern}): three immutable
   descriptors (\code{forced\_trial}, \code{hard\_cancel}, \code{drip\_pricing}),
   each carrying detectability, harm, and revenue parameters.
-  \item \textbf{The model / environment} (\code{DarkPatternTrustModel}) ---
+  \item \textbf{The model / environment} (\code{DarkPatternTrustModel}):
   owns the social network, the scheduling, and all model-level economic and
   reputational state.
-  \item \textbf{The social network} --- a graph whose nodes are user agents and
+  \item \textbf{The social network}: a graph whose nodes are user agents and
   whose edges carry word-of-mouth.
 \end{itemize}
 
@@ -275,7 +275,7 @@ stated as such.
 \subsection{Basic principles}
 The model rests on three principles drawn from the consumer-trust, persuasive-design,
 and diffusion literatures: (i) trust is a slowly accumulated, asymmetrically
-damaged resource --- it is lost faster than it is regained, and accumulated harm
+damaged resource, it is lost faster than it is regained, and accumulated harm
 permanently lowers the ceiling to which it can rebound; (ii) the harm a
 manipulative interface inflicts depends jointly on the design itself
 (detectability, base harm) and on the user (literacy, manipulation sensitivity,
@@ -285,9 +285,9 @@ a network. Dark patterns are modelled as an extractive strategy that trades
 short-term revenue against long-term trust, support cost, and reputation.
 
 \subsection{Emergence}
-The key outcomes --- the trajectories of mean trust, negative-WOM prevalence,
+The key outcomes, the trajectories of mean trust, negative-WOM prevalence,
 cumulative churn, platform reputation, and the revenue/opportunity-cost gap, and
-the timing of the four tipping points --- \emph{emerge} from the interaction of
+the timing of the four tipping points, \emph{emerge} from the interaction of
 individual exposure, detection, trust dynamics, network transmission, and exit
 decisions. They are not imposed by any aggregate equation. The differential
 fragility of user types likewise emerges from trait differences rather than being
@@ -322,8 +322,8 @@ apply.
 
 \subsection{Prediction}
 Agents do not form internal predictions of future states. The only forward-looking
-quantity is a model-level accounting projection --- the counterfactual
-no-dark-pattern revenue used to compute \code{opportunity\_cost} --- which is a
+quantity is a model-level accounting projection, the counterfactual
+no-dark-pattern revenue used to compute \code{opportunity\_cost}, which is a
 bookkeeping device, not an agent prediction. This concept does not apply at the
 agent level.
 
@@ -331,7 +331,7 @@ agent level.
 User agents sense (i) the dark patterns they are exposed to, through the
 stochastic detection submodel, whose success rises with \code{digital\_literacy}
 and with primed \code{warning\_awareness}; and (ii) signals from network
-neighbours --- negative WOM (which lowers trust and raises warning awareness) and
+neighbours, negative WOM (which lowers trust and raises warning awareness) and
 positive WOM (which mildly raises trust and positive sentiment). The platform
 ``senses'' aggregate churn and reputation for its adaptation rule. Sensing is
 local: users only perceive their own exposures and their immediate neighbours'
@@ -351,14 +351,13 @@ other than WOM.
 Stochasticity enters at four points, all routed through a single seeded RNG
 (Mesa's \code{random.Random} seeded via \code{super().\_\_init\_\_(rng=seed)},
 with the network builder drawing its own seed from that RNG):
-(i) \emph{trait initialization} --- user type is drawn from the type
+(i) \emph{trait initialization}, user type is drawn from the type
 distribution, and each trait is a $\mathrm{Beta}(5,5)$ draw scaled to its range;
-(ii) \emph{exposure and detection} --- Bernoulli draws against the exposure and
+(ii) \emph{exposure and detection}, Bernoulli draws against the exposure and
 detection probabilities, each perturbed by small uniform noise
 (\code{EXPOSURE\_NOISE\_SCALE}, \code{DETECTION\_NOISE\_SCALE}~$=0.05$);
-(iii) \emph{WOM transmission} --- Bernoulli draws decide whether each
-sender--neighbour transmission fires; and (iv) \emph{churn and natural attrition}
---- Bernoulli draws against the logistic churn probability and the fixed
+(iii) \emph{WOM transmission}, Bernoulli draws decide whether each
+sender--neighbour transmission fires; and (iv) \emph{churn and natural attrition}, Bernoulli draws against the logistic churn probability and the fixed
 attrition probability. Because every draw uses the one seeded stream and the
 schedule is fixed, a given \texttt{(scenario, seed)} pair is fully reproducible.
 
@@ -396,8 +395,8 @@ The model is initialized as follows (all randomness from the seeded RNG):
   reproducible).
   \item \textbf{Users.} $N$ \code{UserAgent}s are created and bound to graph
   nodes. Each is assigned a type by a weighted draw from the default
-  distribution --- \textbf{skeptic $0.30$, naive $0.50$, activist $0.20$}
-  (\code{DEFAULT\_TYPE\_DISTRIBUTION}) --- and each trait is sampled via
+  distribution, \textbf{skeptic $0.30$, naive $0.50$, activist $0.20$}
+  (\code{DEFAULT\_TYPE\_DISTRIBUTION}), and each trait is sampled via
   \code{beta\_sample} from that type's range (Table~\ref{tab:traits}) with
   \code{BETA\_SHAPE}~$=5.0$. Each user's \code{trust} and
   \code{perceived\_fairness} are set to its \code{trust\_baseline}; harm, WOM,
@@ -575,7 +574,7 @@ and positive sentiment also decay each step at rates
 \label{sub:recovery}
 
 Trust recovers toward a \emph{harm-adjusted ceiling}
-$\bar T = \code{trust\_baseline}\cdot(1-H)$ --- accumulated harm permanently lowers
+$\bar T = \code{trust\_baseline}\cdot(1-H)$, accumulated harm permanently lowers
 how far trust can rebound. The support-driven increment is
 \[
 \Delta T_{\text{rec}} = \beta \cdot q \cdot d_H \cdot d_E \cdot (1 - I_{\text{plat}}),
@@ -604,9 +603,9 @@ applied only when $T < \bar T$ and again capped at $\bar T$.
 \subsection{Positive word-of-mouth}
 \label{sub:poswom}
 
-A user spreads positive WOM only if it is fully satisfied --- no pattern detected
+A user spreads positive WOM only if it is fully satisfied, no pattern detected
 this step, $T \ge \code{SATISFIED\_TRUST\_THRESHOLD} = 0.60$, zero negative WOM,
-zero harm, zero exposure --- and past a cooldown of
+zero harm, zero exposure, and past a cooldown of
 \code{WOM\_COOLDOWN\_PERIOD}~$=5$ steps since last receiving negative WOM. Each
 neighbour contact fires with probability
 $\code{POSITIVE\_WOM\_BASE\_RATE}\cdot a_s \cdot T$
@@ -742,7 +741,7 @@ those in Table~\ref{tab:tipping}, hard-set in \code{model.py}.)
 \label{sub:observation}
 
 At the end of each step the \code{DataCollector} evaluates the reporter dictionary
-returned by \code{build\_all\_reporters()} --- with the default configuration of
+returned by \code{build\_all\_reporters()}, with the default configuration of
 three user types and three patterns this comprises 57 model-level reporters,
 spanning aggregate trust/harm/churn/WOM/economic metrics, the four
 tipping-point trigger flags and steps, $4\times3$ per-user-type series, and
