@@ -16,17 +16,21 @@
 
 \usepackage{booktabs}
 \usepackage{amsmath}
+% cas-sc does not load natbib; author-date \citep/\citet need it (cas-model2-names).
+\usepackage[authoryear]{natbib}
 
 % All quantitative results are injected from the simulation; nothing is hardcoded.
 \input{paper_macros}
 
 \begin{document}
 
-\begin{frontmatter}
+\shorttitle{Dark Patterns and the Erosion of User Trust}
+\shortauthors{D. Pivac and D. Etinger}
 
 \title[mode=title]{Simulating the Long-Term Impact of Dark Patterns on User Trust: A Network-Based Agent-Based Model}
 
 \author[1]{Dejana Pivac}
+\cormark[1]
 \ead{dpivac@fipu.hr}
 
 \author[1]{Darko Etinger}
@@ -35,6 +39,8 @@
 \affiliation[1]{organization={Faculty of Informatics, Juraj Dobrila University of Pula},
                 city={Pula},
                 country={Croatia}}
+
+\cortext[1]{Corresponding author.}
 
 \begin{abstract}
 Dark patterns are deceptive interface design strategies that manipulate users into unintended decisions, yet their long-term systemic effects on user trust, platform reputation, and economic sustainability remain poorly understood. Existing research focuses predominantly on cross-sectional detection and classification of dark patterns, with limited attention to their cumulative and emergent consequences over time. This paper presents a stochastic, network-based agent-based model (ABM) that simulates the long-term dynamics of trust erosion caused by dark patterns in digital platforms. The model incorporates heterogeneous user agents with type-driven behavioral traits, per-pattern exposure--detection--harm pipelines, social contagion through negative word-of-mouth, logistic churn mechanics, and platform-level reputation and economics. Across seven scenarios simulated over \maxSteps\ time steps (six years) and replicated over \numReplicates\ random seeds, even low-intensity dark patterns trigger trust collapse (at step \lowCollapseStep) and extractive divergence, while medium intensity triggers all four formal tipping points and high intensity drives \highChurn\ cumulative churn and near-total trust destruction. The model formalizes four tipping points and demonstrates that dark patterns create a self-reinforcing feedback loop in which short-term revenue extraction accelerates long-term value destruction. These findings contribute a computational framework for reasoning about the systemic harms of deceptive design and offer implications for regulatory policy and platform governance.
@@ -48,11 +54,11 @@ Dark patterns are deceptive interface design strategies that manipulate users in
 \item Dark patterns are a self-defeating, value-destroying platform strategy.
 \end{highlights}
 
-\begin{keyword}
+\begin{keywords}
 dark patterns \sep agent-based modeling \sep trust erosion \sep deceptive design \sep digital platforms \sep churn dynamics
-\end{keyword}
+\end{keywords}
 
-\end{frontmatter}
+\maketitle
 
 % =====================================================================
 \section{Introduction}

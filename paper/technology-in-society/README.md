@@ -31,7 +31,9 @@ python assemble.py                    # copy macros/tables/figures into manuscri
 The manuscript targets the official Elsevier **els-cas** class (`cas-sc.cls`), which is not vendored here. Easiest path:
 1. Create a new Overleaf project from the **"Elsevier CAS (single column)"** template (or download `els-cas-templates` from CTAN: <https://ctan.org/pkg/els-cas-templates>).
 2. Upload `manuscript/main.tex`, `references.bib`, `paper_macros.tex`, and the `tables/` and `figures/` folders (produced by `assemble.py`).
-3. Compile with pdfLaTeX + BibTeX. Reference style is Chicago author–date (`cas-model2-names`); to switch to numbered, change `\bibliographystyle` to `cas-model1-num`.
+3. Compile with pdfLaTeX + BibTeX. Reference style is Chicago author–date (`cas-model2-names`); to switch to numbered, change `\bibliographystyle` to `cas-model1-num`. (`natbib` is already loaded in author-year mode for `\citep`/`\citet`.)
+
+**Local build** (TeX Live / MiKTeX): `cd manuscript && python assemble.py && latexmk -pdf main.tex`. The `cas-sc` class renders an email/ORCID icon next to authors from a `thumbnails/` folder; the official Overleaf template includes it, but a fresh local clone does not (it is gitignored). For a quick local preview, create `manuscript/thumbnails/cas-email.jpeg` (any small image) — verified to produce a clean 12-page PDF.
 
 ## Submission checklist (Technology in Society / Elsevier)
 
