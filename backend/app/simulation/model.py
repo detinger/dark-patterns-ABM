@@ -164,25 +164,25 @@ class DarkPatternTrustModel(mesa.Model):
         self.tipping_points: dict[str, dict] = {
             "trust_collapse": {
                 "label": "Trust Collapse",
-                "description": "Mean trust stays at or below 0.50 for three consecutive steps.",
+                "description": f"Mean trust stays at or below 0.50 for {self.tipping_point_persistence} consecutive steps.",
                 "triggered": False,
                 "step": None,
             },
             "social_contagion": {
                 "label": "Social Contagion",
-                "description": "Negative WOM stays at or above 0.22 for three consecutive steps.",
+                "description": f"Negative WOM stays at or above 0.22 for {self.tipping_point_persistence} consecutive steps.",
                 "triggered": False,
                 "step": None,
             },
             "churn_cascade": {
                 "label": "Churn Cascade",
-                "description": "Cumulative churn stays at or above 0.35 for three consecutive steps.",
+                "description": f"Cumulative churn stays at or above 0.35 for {self.tipping_point_persistence} consecutive steps.",
                 "triggered": False,
                 "step": None,
             },
             "extractive_divergence": {
                 "label": "Extractive Divergence",
-                "description": "Revenue gap exceeds 20% of short-term revenue while cumulative churn stays at or above 0.15 for three consecutive steps.",
+                "description": f"Revenue gap exceeds 20% of short-term revenue while cumulative churn stays at or above 0.15 for {self.tipping_point_persistence} consecutive steps.",
                 "triggered": False,
                 "step": None,
             },

@@ -1,0 +1,8 @@
+scenario,trust_collapse_frac,trust_collapse_step_mean,social_contagion_frac,social_contagion_step_mean,churn_cascade_frac,churn_cascade_step_mean,extractive_divergence_frac,extractive_divergence_step_mean
+control,0.0,,0.0,,0.0,,0.0,
+low_intensity,1.0,187.09,0.0,,0.0,,0.95,283.69473684210527
+medium_intensity,1.0,51.01,1.0,146.46,1.0,209.08,1.0,127.43
+high_intensity,1.0,18.72,1.0,38.78,1.0,98.58,1.0,60.53
+forced_trial_only,1.0,77.39,0.86,269.95348837209303,1.0,264.84,1.0,159.05
+hard_cancel_only,1.0,96.12,0.0,,0.79,296.24050632911394,1.0,180.28
+drip_pricing_only,1.0,79.61,0.39,279.79487179487177,0.99,269.4141414141414,1.0,161.53

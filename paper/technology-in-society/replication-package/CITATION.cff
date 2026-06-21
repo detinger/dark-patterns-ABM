@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this software or the results it generates, please cite it as below."
+type: software
+title: "Dark Patterns ABM: replication package"
+abstract: >-
+  Replication package for an agent-based model (ABM) of trust erosion caused by
+  dark patterns on a digital platform. The package re-generates every table and
+  figure in the accompanying "Technology in Society" manuscript from the
+  simulation model via a single deterministic entry point (reproduce.py).
+authors:
+  - given-names: Dejana
+    family-names: Pivac
+    email: dpivac@fipu.hr
+    affiliation: "Faculty of Informatics, Juraj Dobrila University of Pula"
+    # orcid: "https://orcid.org/<ORCID_PIVAC>"   # TODO: add ORCID before deposit
+  - given-names: Darko
+    family-names: Etinger
+    email: darko.etinger@unipu.hr
+    affiliation: "Faculty of Informatics, Juraj Dobrila University of Pula"
+    # orcid: "https://orcid.org/<ORCID_ETINGER>" # TODO: add ORCID before deposit
+license: MIT
+version: 1.0.0
+date-released: "2026-06-21"
+repository-code: "<GITHUB_URL>"
+url: "<GITHUB_URL>"
+keywords:
+  - dark patterns
+  - agent-based modeling
+  - trust
+  - Mesa
+  - reproducibility

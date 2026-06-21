@@ -276,7 +276,9 @@ SCENARIOS: dict[str, dict] = {
             "hard_cancel": True,
             "drip_pricing": True,
         },
-        "dark_pattern_intensity": 0.50,
+        # 0.40 is the canonical "medium" intensity reported in the paper
+        # (Table I). Keep this in lockstep with the manuscript.
+        "dark_pattern_intensity": 0.40,
         "adaptive_platform": False,
         "customer_support_quality": 0.30,
         "reputation_range": (50, 70),

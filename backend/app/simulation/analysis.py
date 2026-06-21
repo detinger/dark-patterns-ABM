@@ -32,7 +32,7 @@ from app.simulation.config import (
 def detect_tipping_point(model_data: pd.DataFrame) -> dict:
     """Detect tipping points in simulation output using three independent rules.
 
-    Each rule requires ``TIPPING_POINT_PERSISTENCE`` (default 3) consecutive
+    Each rule requires ``TIPPING_POINT_PERSISTENCE`` consecutive
     steps of threshold violation before it fires.
 
     Rules
