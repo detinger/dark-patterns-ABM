@@ -1,4 +1,5 @@
 # LaTeX build artifacts (regenerate with: latexmk -pdf main.tex)
+*.abs
 *.aux
 *.bbl
 *.blg
