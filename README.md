@@ -336,27 +336,29 @@ You should have installed:
 
 ---
 
-## Quick Local Scripts
+## Quick Local Script
 
-If you want the fastest local setup/run path from the repository root, use:
+If you want the fastest local setup/run path from the repository root, use the
+single cross-platform helper (`dev.py`) — it works the same on Windows, macOS,
+and Linux:
 
 ```bash
-./setup-local.sh
-./run-local.sh
+python dev.py setup
+python dev.py run
 ```
 
-What they do:
+What it does:
 
-- `./setup-local.sh`
+- `python dev.py setup`
   - creates `backend/.venv`
   - installs backend dependencies
   - installs frontend dependencies
   - creates `frontend/.env` from `.env.example` if needed
   - sets `VITE_API_BASE=http://localhost:8000/api`
-- `./run-local.sh`
+- `python dev.py run`
   - starts the backend with `python -m app.dev_server`
   - starts the frontend with `npm run dev`
-  - stops both services when you press `Ctrl+C`
+  - stops both services (and frees ports 8000/5173) when you press `Ctrl+C`
 
 ---
 

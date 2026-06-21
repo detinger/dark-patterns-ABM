@@ -21,21 +21,19 @@ The project runs as a monorepo with independent backend and frontend development
 
 ### Setup (first time only)
 
-From repository root:
-```powershell
-.\setup-local.ps1     # Windows PowerShell
-./setup-local.sh      # macOS/Linux bash
+From repository root (one cross-platform script for Windows/macOS/Linux):
+```bash
+python dev.py setup
 ```
 Creates `backend/.venv` + installs Python deps, installs `frontend/` npm deps, writes `frontend/.env` with `VITE_API_BASE=http://localhost:8000/api`.
 
 ### Running
 
 **Both services at once** (from repository root):
-```powershell
-.\run-local.ps1       # Windows PowerShell
-./run-local.sh        # macOS/Linux bash
+```bash
+python dev.py run
 ```
-Starts backend API on `http://localhost:8000` (hot-reload) and frontend on `http://localhost:5173` (Vite). Ctrl+C stops both.
+Starts backend API on `http://localhost:8000` (hot-reload) and frontend on `http://localhost:5173` (Vite). Ctrl+C stops both and frees ports 8000/5173.
 
 **Standalone backend** (from `backend/`): `python -m app.dev_server` → `http://localhost:8000`, docs at `/docs`
 **Standalone frontend** (from `frontend/`): `npm install` then `npm run dev` → `http://localhost:5173`
