@@ -9,12 +9,12 @@ be passed straight to ``DataCollector(model_reporters=...)``.
 
 Reporter categories
 -------------------
-1. Aggregate metrics  (25 functions)
+1. Aggregate metrics  (29 functions)
 2. Tipping-point reporters  (8 per-point + 3 summary = 11)
 3. Per-user-type reporters  (4 metrics x 3 types = 12, via factories)
 4. Per-dark-pattern reporters  (3 metrics x 3 patterns = 9, via factories)
 
-Total: 57 reporters (with default config).
+Total: 61 reporters (with default config).
 """
 
 from __future__ import annotations
@@ -24,11 +24,6 @@ from app.simulation.config import DEFAULT_TYPE_DISTRIBUTION, DARK_PATTERN_DEFAUL
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _active(model):
-    """Return the list of active user agents."""
-    return [a for a in model.user_agents if a.active]
-
 
 def _safe_mean(values: list[float]) -> float:
     """Return the arithmetic mean, or 0.0 for an empty sequence."""
@@ -164,14 +159,6 @@ def opportunity_cost(model) -> float:
 
 
 # ── 2. Tipping-point reporters ────────────────────────────────────────────
-
-_TIPPING_POINT_NAMES = [
-    "trust_collapse",
-    "social_contagion",
-    "churn_cascade",
-    "extractive_divergence",
-]
-
 
 def trust_collapse_triggered(model) -> float:
     return float(model.tipping_points["trust_collapse"]["triggered"])
@@ -325,12 +312,12 @@ def build_all_reporters() -> dict[str, callable]:
     Return a dict of **all** reporter functions, keyed by metric name.
 
     The dict is ready for ``DataCollector(model_reporters=build_all_reporters())``.
-    With the default config (3 user types, 3 dark patterns) this produces 57
+    With the default config (3 user types, 3 dark patterns) this produces 61
     reporters.
     """
     reporters: dict[str, callable] = {}
 
-    # -- Aggregate metrics (25) ------------------------------------------------
+    # -- Aggregate metrics (29) ------------------------------------------------
     reporters["active_users"] = active_users
     reporters["mean_trust"] = mean_trust
     reporters["mean_trust_all"] = mean_trust_all

@@ -25,16 +25,11 @@ from app.simulation.config import (
     THETA_HARM,
     THETA_SOCIAL,
     THETA_SWITCHING_COST,
-    NEGATIVE_WOM_DECAY_RATE,
-    POSITIVE_WOM_DECAY_RATE,
     WOM_AWARENESS_BOOST,
     WOM_TRUST_PENALTY,
     POSITIVE_WOM_TRUST_BOOST,
     POSITIVE_WOM_BASE_RATE,
     WOM_COOLDOWN_PERIOD,
-    SATISFIED_TRUST_THRESHOLD,
-    EXIT_WOM_HARM_THRESHOLD,
-    REVIEW_VISIBILITY,
     CHURN_ADAPTATION_THRESHOLD,
     ADAPTATION_INTENSITY_REDUCTION,
     ADAPTATION_SUPPORT_BOOST,
@@ -144,9 +139,7 @@ class UserAgent(mesa.Agent):
             pname: 0 for pname in DARK_PATTERN_DEFAULTS
         }
         self.negative_wom_sent: int = 0
-        self.negative_wom_received: int = 0
         self.positive_wom_sent: int = 0
-        self.positive_wom_received: int = 0
         self.received_negative_signal: float = 0.0
 
         # ── Per-step scratch ───────────────────────────────────────
@@ -157,7 +150,6 @@ class UserAgent(mesa.Agent):
         # ── Reporting ──────────────────────────────────────────────
         self.last_exposure: float = 0.0
         self.last_churn_probability: float = 0.0
-        self.last_review_valence: float = 0.0
 
     # ── Exposure / Detection / Harm ────────────────────────────────
 
@@ -242,7 +234,6 @@ class UserAgent(mesa.Agent):
         self.trust = clamp(self.trust - trust_loss)
         self.perceived_fairness = clamp(self.perceived_fairness - 0.8 * trust_loss)
         self.harm += harm_gain
-        self.last_review_valence = -min(1.0, scaled_harm)
 
         return detected
 
@@ -405,7 +396,6 @@ class UserAgent(mesa.Agent):
             )
             # Signal + counters (scaled by skepticism)
             nbr.received_negative_signal += 1.0 * impact
-            nbr.negative_wom_received += 1
             self.negative_wom_sent += 1
 
             edges.append(
@@ -452,7 +442,6 @@ class UserAgent(mesa.Agent):
                 ),
             )
             # Counters
-            nbr.positive_wom_received += 1
             self.positive_wom_sent += 1
 
     # ── Churn ──────────────────────────────────────────────────────

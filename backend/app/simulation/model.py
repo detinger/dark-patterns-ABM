@@ -212,18 +212,6 @@ class DarkPatternTrustModel(mesa.Model):
         p = avg_degree / max(1, num_users - 1)
         return nx.erdos_renyi_graph(num_users, p, seed=seed)
 
-    def _draw_beta(self, mean: float, sd: float) -> float:
-        """Draw from a Beta distribution given mean and sd. Kept for backward compat."""
-        epsilon = 1e-6
-        bounded_mean = min(max(mean, epsilon), 1.0 - epsilon)
-        requested_variance = max(sd, epsilon) ** 2
-        max_variance = bounded_mean * (1.0 - bounded_mean)
-        bounded_variance = min(requested_variance, max_variance * (1.0 - epsilon))
-        concentration = (bounded_mean * (1.0 - bounded_mean) / bounded_variance) - 1.0
-        alpha = bounded_mean * concentration
-        beta = (1.0 - bounded_mean) * concentration
-        return clamp(self.random.betavariate(alpha, beta))
-
     def _empty_recent_events(self) -> dict:
         return {
             "step": 0,

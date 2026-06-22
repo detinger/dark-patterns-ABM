@@ -9,15 +9,14 @@ Sections:
     3.  User-type parameter ranges (Beta-distributed draws)
     4.  Dark-pattern profiles
     5.  Doc formula coefficients
-    6.  Pattern exposure probabilities
-    7.  Detection constants
-    8.  WOM / diffusion constants
-    9.  Platform economics
-    10. Platform reputation
-    11. Adaptation thresholds
-    12. Tipping-point thresholds
-    13. Scenario presets (10 scenarios)
-    14. DEFAULTS dict (backward compat with FastAPI service)
+    6.  Detection constants
+    7.  WOM / diffusion constants
+    8.  Platform economics
+    9.  Platform reputation
+    10. Adaptation thresholds
+    11. Tipping-point thresholds
+    12. Scenario presets (10 scenarios)
+    13. DEFAULTS dict (backward compat with FastAPI service)
 """
 
 from __future__ import annotations
@@ -51,7 +50,7 @@ DEFAULT_TYPE_DISTRIBUTION: dict[str, float] = {
 # draw scaled to [low, high].  Bell-shaped — rare to draw extreme values.
 # Traits: trust_baseline, digital_literacy, manipulation_sensitivity,
 #          social_activity, complaint_propensity, switching_cost,
-#          pattern_sensitivity.
+#          pattern_sensitivity, trust_resilience.
 
 USER_TYPE_RANGES: dict[str, dict[str, tuple[float, float]]] = {
     "skeptic": {
@@ -154,24 +153,13 @@ NATURAL_TRUST_RECOVERY = 0.004
 # Natural attrition: background churn unrelated to dark patterns.
 NATURAL_ATTRITION_PROBABILITY = 0.0001  # ~0.01% per agent per step
 
-# ── 6. Pattern exposure probabilities (scaled by global intensity) ──
-
-FORCED_TRIAL_EXPOSURE_PROB = 0.12
-FORCED_TRIAL_SEVERITY = 0.45
-
-HARD_CANCEL_EXPOSURE_PROB = 0.10
-HARD_CANCEL_SEVERITY = 0.50
-
-DRIP_PRICING_EXPOSURE_PROB = 0.08
-DRIP_PRICING_SEVERITY = 0.70
-
-# ── 7. Detection constants ──────────────────────────────────────────
+# ── 6. Detection constants ──────────────────────────────────────────
 
 MAX_DETECTION_PROBABILITY = 0.95
 DETECTION_NOISE_SCALE = 0.05
 EXPOSURE_NOISE_SCALE = 0.05
 
-# ── 8. WOM and diffusion constants ──────────────────────────────────
+# ── 7. WOM and diffusion constants ──────────────────────────────────
 
 NEGATIVE_WOM_DECAY_RATE = 0.05
 POSITIVE_WOM_DECAY_RATE = 0.10
@@ -190,7 +178,7 @@ WOM_MAX_NEIGHBORS_PER_STEP = 3
 WOM_DIMINISHING_RATE = 0.50
 WOM_TRUST_SHIELD = 0.60
 
-# ── 9. Platform economics ───────────────────────────────────────────
+# ── 8. Platform economics ───────────────────────────────────────────
 
 # Dark patterns are introduced after the platform has existing traction.
 INITIAL_CUMULATIVE_REVENUE = 10_000.0
@@ -198,9 +186,7 @@ INITIAL_CUMULATIVE_REVENUE = 10_000.0
 BASE_REVENUE_PER_USER = 5.0
 CHURN_REPLACEMENT_COST = 5.0
 REPUTATION_DAMAGE_COST = 0.5
-REFERRAL_VALUE = 0.3
 SUPPORT_COST_RATE = 0.2
-RETENTION_VALUE = 0.1
 # Undetected exposures extract MORE revenue than detected ones:
 # the platform captures hidden charges, forced upsells, and drip fees
 # silently — no complaint, no churn signal, pure profit.
@@ -211,7 +197,7 @@ HIDDEN_EXTRACTION_MULTIPLIER = 1.5
 # severe rep loss is punishing.
 REPUTATION_REVENUE_EXPONENT = 0.5
 
-# ── 10. Platform reputation ─────────────────────────────────────────
+# ── 9. Platform reputation ──────────────────────────────────────────
 
 DEFAULT_REPUTATION_RANGE: tuple[float, float] = (50, 70)
 CHURN_REPUTATION_WEIGHT = 0.8
@@ -223,22 +209,21 @@ REPUTATION_NATURAL_CAP = 92.0
 # (brand presence, lock-in, no competitors, regulatory tolerance).
 REPUTATION_FLOOR = 2.0
 
-# ── 11. Adaptation thresholds ───────────────────────────────────────
+# ── 10. Adaptation thresholds ───────────────────────────────────────
 
 CHURN_ADAPTATION_THRESHOLD = 0.05
-WOM_ADAPTATION_THRESHOLD = 0.10
 ADAPTATION_INTENSITY_REDUCTION = 0.08
 ADAPTATION_SUPPORT_BOOST = 0.03
 ADAPTATION_INTENSITY_INCREASE = 0.01
 
-# ── 12. Tipping-point thresholds ────────────────────────────────────
+# ── 11. Tipping-point thresholds ────────────────────────────────────
 
 TRUST_COLLAPSE_THRESHOLD = 0.03    # 3% trust drop per step signals collapse
 CHURN_ACCELERATION_THRESHOLD = 0.03  # 3% of active users churn in a single step
 WOM_BURST_THRESHOLD = 0.40         # 40% of active users receiving negative WOM in a step
 TIPPING_POINT_PERSISTENCE = 5      # must hold for 5 consecutive steps
 
-# ── 13. Scenario presets ────────────────────────────────────────────
+# ── 12. Scenario presets ────────────────────────────────────────────
 #
 # Each scenario provides:
 #   patterns              – which dark patterns are active
@@ -364,7 +349,7 @@ SCENARIOS: dict[str, dict] = {
     },
 }
 
-# ── 14. DEFAULTS dict (backward compat with FastAPI service) ────────
+# ── 13. DEFAULTS dict (backward compat with FastAPI service) ────────
 
 DEFAULTS: dict[str, object] = {
     "num_users": DEFAULT_NUM_AGENTS,
