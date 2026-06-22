@@ -1,5 +1,32 @@
 # Version Notes
 
+## v1.7.0 — Reputation & economics overhaul
+
+Fixes the cumulative-revenue-by-intensity behavior where Low intensity showed a large loss with no visible gain and Medium (0.40) vs High (0.80) were economically indistinguishable. Root cause: the platform reputation model latched every dark-pattern scenario to the hard floor (2.0) regardless of intensity, collapsing the reputation-gated revenue rate to an identical value. Agent-level dynamics (trust, harm, WOM, churn, the trust/contagion/cascade tipping points) are **unchanged** — only platform reputation and the economics it drives change.
+
+### Reputation dynamics (mean-reverting)
+- `_update_reputation` now **mean-reverts toward an intensity-aware health target** instead of an unbounded additive penalty walk: `health = w·mean_trust_all + (1−w)·(1 − mean_neg_wom)`, `target = FLOOR + (CAP−FLOOR)·clamp(health − INTENSITY_DRAG·intensity − CHURN_DRAG·churn)`, `rep += ADJUST_RATE·(target − rep)`.
+- New constants: `REPUTATION_HEALTH_TRUST_WEIGHT = 0.7`, `REPUTATION_ADJUST_RATE = 0.06`, `REPUTATION_INTENSITY_DRAG = 0.25`, `REPUTATION_CHURN_DRAG = 0.15`. Removed: `CHURN_REPUTATION_WEIGHT`, `WOM_REPUTATION_WEIGHT`, `POSITIVE_WOM_REPUTATION_WEIGHT`, `REPUTATION_RECOVERY_RATE`.
+- Result: reputation now discriminates intensity (control ≈74, low ≈45, medium ≈18, high →floor) and declines **smoothly** instead of via a late cliff. Both 0-100 and 0-1 reputation now share the same `health` blend.
+
+### Counterfactual / opportunity-cost baseline
+- The projected no-dark-pattern revenue was frozen at each scenario's own (depressed) initial reputation, making the control out-earn its own baseline → a nonsensical **negative** opportunity cost (−85k). It now projects an idealized clean platform (full retention at `REPUTATION_HEALTHY_REFERENCE = 75`), so opportunity cost is coherent and **monotonic in intensity** (control ≈22k = just attrition, low 62k, medium 230k, high 403k).
+
+### Unified revenue ledgers
+- `platform.short_term_revenue` / `long_term_revenue` are now derived from the **same** components as the charted `cumulative_revenue` (single source of truth) instead of a separate ad-hoc formula. `short_term` = gross booked revenue incl. extraction; `long_term` = sustainable base revenue eroded by churn. The **Extractive Divergence** tipping point now actually rises with extraction (previously the extraction term cancelled out, leaving a pure churn×trust quantity).
+
+### Scenario reputation_range wired
+- `reputation_range` in `SCENARIOS` was dead config (never reached the model). It is now passed through `run_scenario` and `service.create` into a new `reputation_range` model parameter, so scenarios start at their configured reputation (control 70–80, high 40–60, …).
+
+### Result (N=500, seed 42, 312 steps)
+- Cumulative revenue now **monotonic**: control 661k > low 622k > medium 454k > high 280k (was control 724k > low 442k > medium 255k ≈ high 241k).
+- Medium-vs-High revenue gap: **38%** (was 5.4%).
+- Aggressive dark patterns now show the **short-term-gain / long-term-loss reversal** (net value crosses below control ≈ step 115).
+
+> Note: paper Table I (reputation, revenue, opportunity-cost rows) and the economic figures need re-running via the replication package; agent-side rows (churn, trust, harm, trust/contagion/cascade tipping points) are unaffected.
+
+---
+
 ## v1.6.0 — Churn calibration and KPI refinements
 
 Fixes unrealistically high baseline churn for healthy platforms and updates dashboard KPI labels for clarity.

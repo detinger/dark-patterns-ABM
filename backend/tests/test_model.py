@@ -331,10 +331,14 @@ def test_control_revenue_not_discounted():
     assert model._step_base_revenue >= undiscounted * 0.8
 
 
-def test_aggressive_dp_net_value_lower_than_control():
-    """Aggressive dark patterns should produce lower net value than control."""
+def test_aggressive_dp_short_term_gain_long_term_loss():
+    """Aggressive dark patterns front-load an extraction windfall (higher net
+    value short-term) but destroy value over the long run (lower net value than
+    control once churn and reputation erosion dominate). This short-term-profit /
+    long-term-loss reversal is the model's central economic claim."""
     control = _make_model(
         num_users=200,
+        max_steps=250,
         dark_pattern_intensity=0.0,
         pattern_forced_trial=False,
         pattern_hard_cancel=False,
@@ -343,17 +347,23 @@ def test_aggressive_dp_net_value_lower_than_control():
     )
     aggressive = _make_model(
         num_users=200,
+        max_steps=250,
         dark_pattern_intensity=0.8,
         pattern_forced_trial=True,
         pattern_hard_cancel=True,
         pattern_drip_pricing=True,
         seed=42,
     )
-    for _ in range(100):
+    # Short-term (≈1 year): extraction windfall keeps aggressive ahead.
+    for _ in range(50):
         control.step()
         aggressive.step()
-    # Over a long enough horizon, the aggressive platform's net value
-    # should be lower because reputation collapse discounts revenue
+    assert aggressive._net_value > control._net_value
+    # Long-term (≈4 years): the reversal — aggressive falls behind as the
+    # user base and reputation collapse outweigh the early extraction.
+    for _ in range(150):
+        control.step()
+        aggressive.step()
     assert aggressive._net_value < control._net_value
 
 

@@ -196,14 +196,40 @@ HIDDEN_EXTRACTION_MULTIPLIER = 1.5
 # 0.5 (square root) gives a natural curve — moderate rep loss is mild,
 # severe rep loss is punishing.
 REPUTATION_REVENUE_EXPONENT = 0.5
+# Opportunity-cost baseline: the no-dark-pattern counterfactual is an
+# idealized platform that retains all its users at a high ("healthy")
+# reputation.  Used to project the revenue a clean platform would have earned,
+# so opportunity_cost = projected_clean − actual is coherent and never negative
+# for the control.  (Previously the projection was frozen at each scenario's
+# own depressed initial reputation, which made the control out-earn its own
+# baseline → a nonsensical negative opportunity cost.)
+# Set to the reputation a clean, well-run platform sustains in this model (the
+# control settles near here), so the control's residual opportunity cost is just
+# its natural attrition — small and positive — while dark-pattern scenarios show
+# large, intensity-monotonic opportunity costs.
+REPUTATION_HEALTHY_REFERENCE = 75.0
 
 # ── 9. Platform reputation ──────────────────────────────────────────
+#
+# Reputation (0-100) is modeled as public perception that MEAN-REVERTS toward a
+# health-based target each step, rather than an unbounded additive penalty walk.
+# The target is driven by aggregate user trust and circulating negative WOM
+# (the same "health" signal as the 0-1 platform.reputation), dragged down by the
+# platform's active dark-pattern intensity and cumulative user abandonment.
+# Mean-reversion keeps reputation a smooth, intensity-discriminating signal
+# instead of latching every dark-pattern scenario to the hard floor regardless
+# of intensity (the bug that made Low/Medium/High economically indistinguishable).
 
 DEFAULT_REPUTATION_RANGE: tuple[float, float] = (50, 70)
-CHURN_REPUTATION_WEIGHT = 0.8
-WOM_REPUTATION_WEIGHT = 0.06
-POSITIVE_WOM_REPUTATION_WEIGHT = 0.03
-REPUTATION_RECOVERY_RATE = 0.10
+# Weight of trust vs. (1 − negative WOM) in the reputation "health" signal.
+# Shared by both reputation variables so they stay consistent.
+REPUTATION_HEALTH_TRUST_WEIGHT = 0.7
+# Mean-reversion speed toward the target per step (≈ quarterly response).
+REPUTATION_ADJUST_RATE = 0.06
+# How much the platform's active dark-pattern intensity lowers the target.
+REPUTATION_INTENSITY_DRAG = 0.25
+# How much cumulative user abandonment (churn) lowers the target.
+REPUTATION_CHURN_DRAG = 0.15
 REPUTATION_NATURAL_CAP = 92.0
 # Even the most aggressive platform retains some baseline reputation
 # (brand presence, lock-in, no competitors, regulatory tolerance).

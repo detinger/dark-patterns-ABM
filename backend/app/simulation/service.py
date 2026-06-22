@@ -44,6 +44,8 @@ class SimulationService:
                 params["social_influence_strength"] = scenario["social_influence_strength"]
             if "retention_bonus" in scenario:
                 params["retention_bonus"] = scenario["retention_bonus"]
+            if "reputation_range" in scenario:
+                params["reputation_range"] = scenario["reputation_range"]
 
         simulation_id = str(uuid4())
         model = self._build_model_at_step(params, 0)

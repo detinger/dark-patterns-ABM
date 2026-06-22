@@ -28,10 +28,10 @@ from app.simulation.config import (
     CHURN_REPLACEMENT_COST,
     REPUTATION_DAMAGE_COST,
     SUPPORT_COST_RATE,
-    CHURN_REPUTATION_WEIGHT,
-    WOM_REPUTATION_WEIGHT,
-    POSITIVE_WOM_REPUTATION_WEIGHT,
-    REPUTATION_RECOVERY_RATE,
+    REPUTATION_HEALTH_TRUST_WEIGHT,
+    REPUTATION_ADJUST_RATE,
+    REPUTATION_INTENSITY_DRAG,
+    REPUTATION_CHURN_DRAG,
     REPUTATION_NATURAL_CAP,
     TIPPING_POINT_PERSISTENCE,
     MAX_TRUST_LOSS_PER_STEP,
@@ -41,6 +41,7 @@ from app.simulation.config import (
     REPUTATION_FLOOR,
     INITIAL_CUMULATIVE_REVENUE,
     REPUTATION_REVENUE_EXPONENT,
+    REPUTATION_HEALTHY_REFERENCE,
 )
 from app.simulation.metrics import build_all_reporters
 from app.simulation.patterns import DarkPattern
@@ -66,6 +67,7 @@ class DarkPatternTrustModel(mesa.Model):
         social_influence_strength=0.18,
         review_visibility=0.35,
         retention_bonus=0.0,
+        reputation_range=None,
     ):
         super().__init__(rng=seed)
 
@@ -139,17 +141,26 @@ class DarkPatternTrustModel(mesa.Model):
         self._step_exposure_count_by_pattern: dict[str, int] = {p: 0 for p in self.dark_patterns}
 
         # ── Economics ─────────────────────────────────────────────────
-        self.platform_reputation: float = self.random.uniform(*DEFAULT_REPUTATION_RANGE)
+        rep_range = reputation_range if reputation_range is not None else DEFAULT_REPUTATION_RANGE
+        self.platform_reputation: float = self.random.uniform(*rep_range)
         self._step_revenue: float = 0.0
         self._step_base_revenue: float = 0.0
         self._step_dp_revenue: float = 0.0
         self._step_costs: float = 0.0
         self._step_profit: float = 0.0
         self._cumulative_revenue: float = INITIAL_CUMULATIVE_REVENUE
+        self._cumulative_base_revenue: float = 0.0
         self._cumulative_costs: float = 0.0
         self._net_value: float = INITIAL_CUMULATIVE_REVENUE
-        initial_rep_factor = (self.platform_reputation / 100.0) ** REPUTATION_REVENUE_EXPONENT
-        self._projected_step_revenue: float = len(self.user_agents) * BASE_REVENUE_PER_USER * initial_rep_factor
+        # Opportunity-cost baseline: revenue an idealized no-dark-pattern platform
+        # would earn — FULL user retention at a fixed healthy reputation. This is
+        # the same clean reference for every scenario (so cross-scenario gaps are
+        # comparable) and is high enough that the control never out-earns it,
+        # keeping opportunity_cost coherent (>= 0 for control).
+        healthy_rep_factor = (REPUTATION_HEALTHY_REFERENCE / 100.0) ** REPUTATION_REVENUE_EXPONENT
+        self._projected_step_revenue: float = (
+            len(self.user_agents) * BASE_REVENUE_PER_USER * healthy_rep_factor
+        )
         self._cumulative_projected_revenue: float = INITIAL_CUMULATIVE_REVENUE
         self._opportunity_cost: float = 0.0
 
@@ -399,34 +410,22 @@ class DarkPatternTrustModel(mesa.Model):
     # ------------------------------------------------------------------
 
     def _update_platform_outcomes(self) -> None:
-        """Compute cumulative churn, churn rate, platform reputation, revenue."""
+        """Compute cumulative churn, churn rate, and the 0-1 reputation health
+        signal.  Revenue ledgers are owned by _update_economics (single source
+        of truth) so short-term / long-term revenue stay consistent with the
+        charted cumulative_revenue series."""
         active = [a for a in self.user_agents if a.active]
         churned = [a for a in self.user_agents if not a.active]
         prev_cumulative = self.cumulative_churn
         self.cumulative_churn = len(churned) / len(self.user_agents) if self.user_agents else 0.0
         self.churn_rate = max(0.0, self.cumulative_churn - prev_cumulative)
 
+        # Instantaneous reputation "health" (0-1): the same trust/WOM blend that
+        # drives the 0-100 model-level reputation target (REPUTATION_HEALTH_TRUST_WEIGHT).
         mean_tr = sum(a.trust for a in active) / len(active) if active else 0.0
         mean_wom = sum(a.negative_wom for a in active) / len(active) if active else 0.0
-        self.platform.reputation = clamp(0.7 * mean_tr + 0.3 * (1.0 - mean_wom))
-
-        # Short-term revenue: base subscription + dark-pattern extraction
-        # Dark patterns generate immediate extra revenue (forced conversions,
-        # hidden charges, upsells) proportional to exposure intensity and the
-        # pattern's short_term_gain_weight.
-        step_short = float(len(active))  # base subscription revenue per user
-        for dp in self.dark_patterns.values():
-            if dp.intensity > 0:
-                exposed_count = self._step_exposure_count_by_pattern.get(dp.name, 0)
-                step_short += exposed_count * dp.intensity * dp.short_term_gain_weight
-        self.platform.short_term_revenue += step_short
-
-        # Long-term revenue: discounted by cumulative churn AND trust erosion.
-        # A platform losing users and trust will see future revenue evaporate.
-        trust_discount = mean_tr if active else 0.0
-        self.platform.long_term_revenue = self.platform.short_term_revenue * (
-            (1.0 - self.cumulative_churn) * trust_discount
-        )
+        w = REPUTATION_HEALTH_TRUST_WEIGHT
+        self.platform.reputation = clamp(w * mean_tr + (1.0 - w) * (1.0 - mean_wom))
 
     def _update_economics(self) -> None:
         """Compute step-level and cumulative economics."""
@@ -467,28 +466,72 @@ class DarkPatternTrustModel(mesa.Model):
         self._step_costs = step_churn_cost + step_support_cost + step_wom_damage
         self._step_profit = self._step_revenue - self._step_costs
         self._cumulative_revenue += self._step_revenue
+        self._cumulative_base_revenue += step_base_revenue
         self._cumulative_costs += self._step_costs
         self._net_value = self._cumulative_revenue - self._cumulative_costs
         self._cumulative_projected_revenue += self._projected_step_revenue
         self._opportunity_cost = self._cumulative_projected_revenue - self._cumulative_revenue
 
-    def _update_reputation(self) -> None:
-        """Update the model-level platform reputation score (0-100 scale)."""
-        n = max(len(self.user_agents), 1)
-        churn_penalty = (self._step_churns / n) * CHURN_REPUTATION_WEIGHT * 100
-        wom_penalty = (self._step_negative_wom / n) * WOM_REPUTATION_WEIGHT * 100
-        pos_wom_boost = (self._step_positive_wom / n) * POSITIVE_WOM_REPUTATION_WEIGHT * 100
+        # Unified revenue ledgers (single source of truth — same components as
+        # the charted cumulative_revenue, excluding the pre-sim seed balance).
+        #   short_term : gross booked revenue, INCLUDING dark-pattern extraction
+        #   long_term  : sustainable revenue = base only, eroded by abandonment
+        # Their gap drives the extractive_divergence tipping point, so it now
+        # actually rises with extraction (previously the extraction term
+        # cancelled out, leaving a pure churn×trust quantity).
+        self.platform.short_term_revenue = (
+            self._cumulative_revenue - INITIAL_CUMULATIVE_REVENUE
+        )
+        self.platform.long_term_revenue = (
+            self._cumulative_base_revenue * (1.0 - self.cumulative_churn)
+        )
 
+    def _update_reputation(self) -> None:
+        """Mean-revert the model-level reputation (0-100) toward a health-based,
+        intensity-aware target.
+
+        The old version was an unbounded additive penalty walk dominated by raw
+        negative-WOM *volume* with only a flat +0.10/step recovery and no
+        intensity term.  It drove every dark-pattern scenario to the hard floor
+        (2.0) regardless of intensity — collapsing the per-user revenue rate to
+        an identical value and making Low/Medium/High economically
+        indistinguishable, with an abrupt late "cliff".
+
+        Reputation now relaxes toward a target each step:
+          health  = w·mean_trust(all) + (1−w)·(1 − mean_negative_wom(active))
+          target₀₁ = clamp(health − intensity_drag·intensity − churn_drag·churn)
+          target   = FLOOR + (CAP − FLOOR)·target₀₁
+          rep     += ADJUST_RATE·(target − rep)
+        This is smooth, bounded, and monotonic in intensity, so reputation (and
+        the revenue it gates) keeps discriminating Low/Medium/High.  Note: agent
+        trust/harm/WOM/churn are unaffected — only the platform-level reputation
+        and the economics it drives change.
+        """
+        users = self.user_agents
+        mean_trust_all = (
+            sum(a.trust for a in users) / len(users) if users else 0.0
+        )
+        active = [a for a in users if a.active]
+        mean_neg_wom = (
+            sum(a.negative_wom for a in active) / len(active) if active else 0.0
+        )
+
+        w = REPUTATION_HEALTH_TRUST_WEIGHT
+        health = w * mean_trust_all + (1.0 - w) * (1.0 - mean_neg_wom)
+
+        intensity = self.platform.dark_pattern_intensity
+        target_01 = clamp(
+            health
+            - REPUTATION_INTENSITY_DRAG * intensity
+            - REPUTATION_CHURN_DRAG * self.cumulative_churn
+        )
+        target = REPUTATION_FLOOR + (REPUTATION_NATURAL_CAP - REPUTATION_FLOOR) * target_01
+
+        self.platform_reputation += REPUTATION_ADJUST_RATE * (
+            target - self.platform_reputation
+        )
         self.platform_reputation = max(
-            REPUTATION_FLOOR,   # even the worst platform retains some baseline
-            min(
-                REPUTATION_NATURAL_CAP,
-                self.platform_reputation
-                - churn_penalty
-                - wom_penalty
-                + pos_wom_boost
-                + REPUTATION_RECOVERY_RATE,
-            ),
+            REPUTATION_FLOOR, min(REPUTATION_NATURAL_CAP, self.platform_reputation)
         )
 
     def _update_tipping_points(self) -> None:

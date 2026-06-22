@@ -73,6 +73,8 @@ def run_scenario(
         kwargs["social_influence_strength"] = scenario["social_influence_strength"]
     if "retention_bonus" in scenario:
         kwargs["retention_bonus"] = scenario["retention_bonus"]
+    if "reputation_range" in scenario:
+        kwargs["reputation_range"] = scenario["reputation_range"]
     model = DarkPatternTrustModel(**kwargs)
     for _ in range(max_steps):
         model.step()
