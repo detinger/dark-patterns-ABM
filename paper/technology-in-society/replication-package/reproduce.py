@@ -629,6 +629,9 @@ def make_figures(per_run: pd.DataFrame, sensitivity: pd.DataFrame | None) -> Non
                          capsize=3, color="#2c7fb8", label="Trust")
             ax.set_xlabel(param.replace("_", " ")); ax.set_ylabel("Cumulative churn (%)")
             ax2.set_ylabel("Mean trust (all)")
+            # Shared axes across panels so magnitudes are visually comparable.
+            ax.set_ylim(0, 100)
+            ax2.set_ylim(0, 0.8)
             ax.grid(alpha=0.3)
         fig.suptitle("Local sensitivity analysis (around medium baseline)")
         fig.tight_layout(); fig.savefig(FIG_DIR / "fig_sensitivity.pdf", metadata=PDF_META); plt.close(fig)
