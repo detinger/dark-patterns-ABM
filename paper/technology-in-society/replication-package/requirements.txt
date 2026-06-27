@@ -1,0 +1,8 @@
+# Minimal pinned dependencies to run reproduce.py and the simulation model.
+# Exact versions used to generate the results in the paper (Python 3.12.5).
+# For the complete, fully-reconstructable environment see requirements.lock.
+mesa==3.5.1
+networkx==3.6.1
+numpy==2.4.6
+pandas==3.0.3
+matplotlib==3.11.0

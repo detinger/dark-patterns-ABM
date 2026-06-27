@@ -115,9 +115,10 @@ These should ideally be calibrated together from the same churn or switching dat
 
 | Parameter | Meaning | Primary source | Estimation method | Calibration target / note |
 | --- | --- | --- | --- | --- |
-| `theta0` | Churn intercept | Retention / panel dataset | Logistic regression intercept | Baseline churn when predictors are neutral |
-| `theta_trust` | Effect of trust loss on churn | Retention / panel dataset, switching survey | Logistic regression coefficient | Fit effect of lower trust on exit probability |
-| `theta_harm` | Effect of accumulated harm on churn | Same as above | Logistic regression coefficient | Harm should independently raise churn odds |
+| `theta0` | Churn intercept (currently -8.0) | Retention / panel dataset | Logistic regression intercept | Baseline churn when predictors are neutral. With the dead zone, healthy platforms see ~3-5% cumulative churn over 6 years |
+| `theta_trust` | Effect of trust deficit on churn (currently 3.50) | Retention / panel dataset, switching survey | Logistic regression coefficient | Applied to `max(0, (1-trust) - dead_zone)`. Raised from 2.80 to compensate for the dead zone reducing effective deficit range |
+| `churn_trust_dead_zone` | Trust deficit below which trust does not drive churn (currently 0.30) | Survey trust distributions, retention breakpoints | Threshold analysis | Users with trust above ~0.70 experience zero trust-driven churn. Fit to where satisfaction surveys show users as "satisfied" |
+| `theta_harm` | Effect of accumulated harm on churn | Same as above | Logistic regression coefficient | Harm should independently raise churn odds. Note: harm now saturates logistically at 1.0 |
 | `theta_social` | Effect of negative WOM on churn | Same as above | Logistic regression coefficient | Fit contagion-mediated exit risk |
 | `theta_switching_cost` | Protective effect of switching cost | Same as above | Logistic regression coefficient | Higher switching cost should reduce churn probability |
 
@@ -131,7 +132,55 @@ These are not part of `DEFAULTS`, but they should also be calibrated if you want
 | Social Contagion threshold (`0.22`) | Persistent negative WOM regime | Review / complaint propagation data | Breakpoint or changepoint analysis | Fit where peer negativity starts spreading faster |
 | Churn Cascade threshold (`0.35`) | Persistent user-loss regime | Cohort retention data | Threshold search | Fit where loss becomes self-reinforcing or hard to reverse |
 | Extractive Divergence rule (`gap >= 20%`, churn `>= 0.15`) | Short-term extraction outpaces sustainable value | Revenue-retention panel data | Joint breakpoint optimization | Fit where revenue still grows short-run but long-run value deteriorates |
-| Persistence window (`3 steps`) | Protection against one-step noise | Time aggregation choice + validation | Stability criterion tuning | Choose the shortest window that avoids false positives |
+| Persistence window (`5 steps`) | Protection against one-step noise | Time aggregation choice + validation | Stability criterion tuning | Choose the shortest window that avoids false positives |
+
+### New mechanics parameters (v1.2.0)
+
+| Parameter | Meaning | Current value | Calibration note |
+| --- | --- | --- | --- |
+| `BETA_SHAPE` | Beta distribution shape for trait sampling | 5.0 | Higher values concentrate traits around type midpoints |
+| `EXPOSURE_BUILDUP_STEPS` | Exposures before full harm | 3 | Fit to observed habituation/sensitisation timelines |
+| `INITIAL_HARM_FRACTION` | Harm fraction on first exposure | 0.2 | First encounter is 20% as harmful as steady-state |
+| `HARM_DAMPENING_FACTOR` | Recovery dampening by accumulated harm | 1.0 | At harm=0.85 recovery drops to 15% effectiveness |
+| `HARM_DAMPENING_CAP` | Maximum dampening (floor on recovery) | 0.85 | Recovery never drops below 15% |
+| `NATURAL_ATTRITION_PROBABILITY` | Background churn per agent per step | 0.0001 | ~0.01%, independent of dark patterns |
+| `HIDDEN_EXTRACTION_MULTIPLIER` | Revenue multiplier for undetected exposures | 1.5 | Undetected dark patterns extract 50% more |
+| `REPUTATION_FLOOR` | Minimum reputation on 0-100 scale | 2.0 | Even worst platforms retain baseline presence |
+| `INITIAL_CUMULATIVE_REVENUE` | Starting revenue before dark patterns | 10,000 | Platform already has traction |
+| `REPUTATION_REVENUE_EXPONENT` | Power exponent for reputation-revenue curve | 0.5 | Controls how sensitive revenue is to reputation. 0.5 (square root): moderate loss is mild, severe loss is punishing. Fit to observed revenue-reputation elasticity from platform analytics |
+| `trust_resilience` (per type) | Fraction of trust loss dampened | naive: 0.30-0.50, skeptic: 0.00-0.10, activist: 0.00-0.05 | Fit to vignette responses per user archetype |
+
+### WOM realism mechanics (v1.4.0)
+
+| Parameter | Meaning | Current value | Calibration note |
+| --- | --- | --- | --- |
+| `WOM_HARM_COOLDOWN_THRESHOLD` | Minimum accumulated harm before user spreads negative WOM | 0.08 | Fit to observed delay between first bad experience and first public complaint. Survey or diary data on complaint latency |
+| `WOM_RAMP_RANGE` | Harm range over which WOM ramps from 0% to 100% strength | 0.25 | Controls how quickly frustrated users become vocal. Fit to complaint intensity curves from longitudinal data |
+| `WOM_DAMPING_FACTOR` | Global multiplier on per-neighbor WOM spread probability | 0.35 | Fit to observed peer-complaint transmission rates. Lower values model platforms where complaints are less visible |
+| `WOM_MAX_NEIGHBORS_PER_STEP` | Maximum neighbors a user can spread WOM to per step | 3 | Fit to average number of social contacts a complainant reaches per time unit. Communication diary or social media data |
+| `WOM_DIMINISHING_RATE` | Discount rate for repeated WOM messages on same receiver per step | 0.50 | Models information saturation. Fit to experiments on repeated complaint exposure and marginal trust impact |
+| `WOM_TRUST_SHIELD` | How much current trust shields a receiver from WOM impact | 0.60 | Fit to moderation analysis: do high-trust users discount negative information more? Survey or experiment |
+| `RECOVERY_EXPOSURE_CEILING` | Step-harm threshold above which recovery is fully suppressed | 0.15 | Controls when customer support is overwhelmed. Fit to support satisfaction data conditioned on exposure severity |
+| `NATURAL_TRUST_RECOVERY` | Passive trust recovery rate per step (fraction of gap to baseline) | 0.004 | Models forgetting/forgiveness. Fit to longitudinal trust recovery after negative experience removal |
+| `BETA_SUPPORT_RECOVERY` | Support-driven recovery rate (tuned from 0.10) | 0.14 | Fit to observed trust recovery rates in post-complaint resolution studies |
+
+### Trust rebound prevention mechanics (v1.5.0)
+
+| Parameter | Meaning | Current value | Calibration note |
+| --- | --- | --- | --- |
+| Recovery ceiling formula | `baseline × (1 − harm)` — harm permanently depresses max recoverable trust | Formula, not a constant | Validate that simulated trust trajectories do not rebound unrealistically after mass churn events |
+| Intensity dampening on recovery | Both support and natural recovery multiplied by `(1 − dark_pattern_intensity)` | Formula using existing intensity | At intensity 0.40, recovery runs at 60%. Validate against retention studies under ongoing dark-pattern exposure |
+| `POSITIVE_WOM_TRUST_BOOST` | Trust increase per positive WOM message (reduced to prevent rebound) | 0.10 | Fit to observed positive peer-effect sizes. Should be roughly equal to discounted negative WOM impact per message |
+| `POSITIVE_WOM_BASE_RATE` | Base probability of spreading positive WOM per neighbor (reduced) | 0.10 | Fit to observed positive review/recommendation rates. Should not overwhelm negative WOM volume |
+| Positive WOM gate | Requires `harm == 0` and `cumulative_exposure == 0` | Strict gate | Users with any dark-pattern exposure history are excluded from spreading positive sentiment |
+
+### Churn calibration mechanics (v1.6.0)
+
+| Parameter | Meaning | Current value | Calibration note |
+| --- | --- | --- | --- |
+| `CHURN_TRUST_DEAD_ZONE` | Trust deficit subtracted before applying trust weight in churn formula | 0.30 | Users with trust > 0.70 have zero trust-driven churn. Fit to survey data on user satisfaction thresholds — the point below which dissatisfaction begins driving exit intent |
+| `THETA0` (updated) | Churn intercept lowered from -7.00 to -8.00 | -8.00 | With the dead zone, healthy platforms see ~6.6% cumulative churn over 312 steps (was 26.2%). Fit to observed retention rates for platforms without manipulative patterns |
+| `THETA_TRUST` (updated) | Trust weight raised from 2.80 to 3.50 | 3.50 | Compensates for the dead zone reducing the effective trust deficit range. Dark-pattern-exposed users (trust < 0.40) still experience strong churn pressure |
 
 ## Concrete calibration workflow
 

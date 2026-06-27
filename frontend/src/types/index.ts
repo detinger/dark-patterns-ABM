@@ -1,6 +1,7 @@
 export type NetworkType = 'small_world' | 'scale_free' | 'random'
 
 export interface SimulationCreateRequest {
+  scenario?: string | null
   num_users: number
   network_type: NetworkType
   avg_degree: number
@@ -20,6 +21,7 @@ export interface SimulationCreateRequest {
 export interface Metrics {
   active_users: number
   mean_trust: number
+  mean_trust_all: number
   mean_harm: number
   churn_rate: number
   cumulative_churn: number
@@ -27,6 +29,25 @@ export interface Metrics {
   negative_wom_rate: number
   short_term_revenue: number
   long_term_revenue: number
+  step_churns: number
+  step_negative_wom_count: number
+  step_positive_wom_count: number
+  step_base_revenue: number
+  step_dp_revenue: number
+  step_revenue: number
+  step_costs: number
+  step_profit: number
+  cumulative_revenue: number
+  cumulative_costs: number
+  net_value: number
+  cumulative_projected_revenue: number
+  platform_reputation: number
+  trust_skeptic: number
+  trust_naive: number
+  trust_activist: number
+  churned_skeptic: number
+  churned_naive: number
+  churned_activist: number
 }
 
 export interface NetworkNode {
@@ -34,6 +55,7 @@ export interface NetworkNode {
   id: number
   nodeType: 'user' | 'platform'
   label?: string
+  user_type?: 'skeptic' | 'naive' | 'activist'
   trust: number
   perceived_fairness: number
   harm: number
@@ -41,6 +63,7 @@ export interface NetworkNode {
   active: boolean
   last_exposure: number
   last_churn_probability: number
+  warning_awareness?: number
   reputation?: number
   dark_pattern_intensity?: number
   customer_support_quality?: number

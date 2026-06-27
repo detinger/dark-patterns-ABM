@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
-from app.simulation.config import DEFAULTS
+from app.simulation.config import DEFAULTS, SCENARIOS
 from app.simulation.model import DarkPatternTrustModel
 
 
@@ -29,6 +29,24 @@ class SimulationService:
 
     def create(self, overrides: dict[str, Any] | None = None) -> SimulationSession:
         params = {**DEFAULTS, **(overrides or {})}
+
+        # If a named scenario was requested, apply its settings
+        scenario_name = params.pop("scenario", None)
+        if scenario_name and scenario_name in SCENARIOS:
+            scenario = SCENARIOS[scenario_name]
+            params["dark_pattern_intensity"] = scenario["dark_pattern_intensity"]
+            params["pattern_forced_trial"] = scenario["patterns"]["forced_trial"]
+            params["pattern_hard_cancel"] = scenario["patterns"]["hard_cancel"]
+            params["pattern_drip_pricing"] = scenario["patterns"]["drip_pricing"]
+            params["adaptive_platform"] = scenario["adaptive_platform"]
+            params["customer_support_quality"] = scenario["customer_support_quality"]
+            if "social_influence_strength" in scenario:
+                params["social_influence_strength"] = scenario["social_influence_strength"]
+            if "retention_bonus" in scenario:
+                params["retention_bonus"] = scenario["retention_bonus"]
+            if "reputation_range" in scenario:
+                params["reputation_range"] = scenario["reputation_range"]
+
         simulation_id = str(uuid4())
         model = self._build_model_at_step(params, 0)
         session = SimulationSession(simulation_id=simulation_id, model=model, params=params)

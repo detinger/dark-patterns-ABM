@@ -1,0 +1,13 @@
+# Replication package — what NOT to commit.
+#
+# Bulky, fully regenerable per-run outputs belong in the archived Zenodo
+# deposit, not the git repository (reproduce.py recreates them deterministically).
+data/raw/
+*.log
+__pycache__/
+.venv/
+
+# The repository-root .gitignore excludes "*.csv"; re-include the small
+# processed/aggregate CSVs that the manuscript and reviewers actually need.
+!data/processed/
+!data/processed/**

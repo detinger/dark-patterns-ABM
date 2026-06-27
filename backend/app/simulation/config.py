@@ -1,9 +1,388 @@
-DEFAULTS = {
-    "num_users": 500,
-    "network_type": "small_world",
-    "avg_degree": 8,
-    "rewire_prob": 0.08,
-    "max_steps": 104,
+"""
+Combined configuration for the Dark-Matters ABM simulation.
+
+All named constants live here — no magic numbers elsewhere.
+Sections:
+    0.  Agent sampling
+    1.  Model defaults
+    2.  User-type distribution
+    3.  User-type parameter ranges (Beta-distributed draws)
+    4.  Dark-pattern profiles
+    5.  Doc formula coefficients
+    6.  Detection constants
+    7.  WOM / diffusion constants
+    8.  Platform economics
+    9.  Platform reputation
+    10. Adaptation thresholds
+    11. Tipping-point thresholds
+    12. Scenario presets (10 scenarios)
+    13. DEFAULTS dict (backward compat with FastAPI service)
+"""
+
+from __future__ import annotations
+
+# ── 0. Agent sampling ───────────────────────────────────────────────
+
+BETA_SHAPE: float = 5.0
+# Symmetric Beta(shape, shape) — bell-shaped, peaks at midpoint of each
+# trait range.  Higher values concentrate mass tighter around the mean.
+
+# ── 1. Model defaults ───────────────────────────────────────────────
+
+DEFAULT_NUM_AGENTS = 500
+DEFAULT_MAX_STEPS = 312  # 6 years, 1 step = 1 week
+DEFAULT_AVG_NODE_DEGREE = 8
+DEFAULT_REWIRING_PROB = 0.08
+DEFAULT_NETWORK_TYPE = "small_world"
+DEFAULT_SOCIAL_INFLUENCE_STRENGTH = 0.18
+
+# ── 2. User-type distribution ───────────────────────────────────────
+
+DEFAULT_TYPE_DISTRIBUTION: dict[str, float] = {
+    "skeptic": 0.30,
+    "naive": 0.50,
+    "activist": 0.20,
+}
+
+# ── 3. User-type parameter ranges (Beta-distributed draws) ─────────
+#
+# Each sub-dict maps trait → (low, high) for a Beta(BETA_SHAPE, BETA_SHAPE)
+# draw scaled to [low, high].  Bell-shaped — rare to draw extreme values.
+# Traits: trust_baseline, digital_literacy, manipulation_sensitivity,
+#          social_activity, complaint_propensity, switching_cost,
+#          pattern_sensitivity, trust_resilience.
+
+USER_TYPE_RANGES: dict[str, dict[str, tuple[float, float]]] = {
+    "skeptic": {
+        "trust_baseline": (0.55, 0.70),
+        "digital_literacy": (0.70, 0.95),
+        "manipulation_sensitivity": (0.55, 0.75),
+        "social_activity": (0.30, 0.50),
+        "complaint_propensity": (0.40, 0.65),
+        "switching_cost": (0.30, 0.45),
+        "pattern_sensitivity": (1.0, 1.4),
+        "trust_resilience": (0.0, 0.10),
+    },
+    "naive": {
+        "trust_baseline": (0.75, 0.90),
+        "digital_literacy": (0.15, 0.40),
+        "manipulation_sensitivity": (0.30, 0.50),
+        "social_activity": (0.10, 0.30),
+        "complaint_propensity": (0.10, 0.25),
+        "switching_cost": (0.50, 0.70),
+        "pattern_sensitivity": (0.6, 0.9),
+        # Naive users rationalise or fail to attribute bad UX to dark patterns,
+        # so 30-50% of potential trust loss is dampened.
+        "trust_resilience": (0.30, 0.50),
+    },
+    "activist": {
+        "trust_baseline": (0.60, 0.75),
+        "digital_literacy": (0.75, 0.95),
+        "manipulation_sensitivity": (0.70, 0.90),
+        "social_activity": (0.45, 0.70),
+        "complaint_propensity": (0.40, 0.60),
+        "switching_cost": (0.25, 0.40),
+        "pattern_sensitivity": (1.1, 1.5),
+        "trust_resilience": (0.0, 0.05),
+    },
+}
+
+# ── 4. Dark-pattern profiles ────────────────────────────────────────
+
+DARK_PATTERN_DEFAULTS: dict[str, dict[str, float]] = {
+    "forced_trial": {
+        "detectability": 0.3,
+        "base_harm": 1.8,
+        "detected_harm_multiplier": 2.2,
+        "hidden_harm_multiplier": 0.8,
+        "wom_propensity_multiplier": 1.6,
+        "short_term_gain_weight": 3.0,    # forced conversions are very lucrative
+    },
+    "hard_cancel": {
+        "detectability": 0.4,
+        "base_harm": 1.6,
+        "detected_harm_multiplier": 2.0,
+        "hidden_harm_multiplier": 0.5,
+        "wom_propensity_multiplier": 1.3,
+        "short_term_gain_weight": 2.0,    # retained subscriber revenue
+    },
+    "drip_pricing": {
+        "detectability": 0.4,
+        "base_harm": 2.0,
+        "detected_harm_multiplier": 2.0,
+        "hidden_harm_multiplier": 0.5,
+        "wom_propensity_multiplier": 1.3,
+        "short_term_gain_weight": 2.5,    # hidden fees extraction
+    },
+}
+
+# ── 5. Doc formula coefficients ─────────────────────────────────────
+
+ALPHA_EXPOSURE_TO_TRUST = 0.22
+BETA_SUPPORT_RECOVERY = 0.14
+DELTA_EXPOSURE_TO_HARM = 0.18
+GAMMA_SOCIAL_TRUST_LOSS = 0.12
+
+THETA0 = -8.00              # baseline intercept: with dead-zone, healthy platforms see ~3-5% 6yr churn
+THETA_TRUST = 3.50          # weight of trust deficit (after dead-zone subtraction)
+THETA_HARM = 1.90           # weight of cumulative harm
+THETA_SOCIAL = 1.20         # weight of negative WOM exposure
+THETA_SWITCHING_COST = 1.60 # protective effect of switching costs
+CHURN_TRUST_DEAD_ZONE = 0.30  # trust deficit below this threshold doesn't drive churn
+
+# Per-step caps: the doc formula assumes ONE aggregated exposure per step,
+# but 3 patterns can each apply alpha/delta independently, tripling the
+# effective per-step loss.  These caps limit how fast trust/harm can change
+# in a single step so the decline is gradual (~15 steps to collapse),
+# creating a visible extraction window before churn accelerates.
+MAX_TRUST_LOSS_PER_STEP = 0.035  # ~21 steps from healthy trust to zero
+MAX_HARM_GAIN_PER_STEP = 0.04    # harm builds gradually
+
+# Exposure buildup: agents ramp up to full harm over the first N exposures
+# to a given pattern, rather than absorbing full harm on first encounter.
+EXPOSURE_BUILDUP_STEPS = 3       # exposures before full harm applies
+INITIAL_HARM_FRACTION = 0.2      # fraction of harm on first exposure
+
+# Harm-dampened recovery: as cumulative harm grows, customer support
+# becomes progressively less effective at restoring trust.
+HARM_DAMPENING_FACTOR = 1.0      # at harm=1.0, dampening = min(1.0, cap)
+HARM_DAMPENING_CAP = 0.85        # recovery never drops below 15% effectiveness
+RECOVERY_EXPOSURE_CEILING = 0.15
+NATURAL_TRUST_RECOVERY = 0.004
+
+# Natural attrition: background churn unrelated to dark patterns.
+NATURAL_ATTRITION_PROBABILITY = 0.0001  # ~0.01% per agent per step
+
+# ── 6. Detection constants ──────────────────────────────────────────
+
+MAX_DETECTION_PROBABILITY = 0.95
+DETECTION_NOISE_SCALE = 0.05
+EXPOSURE_NOISE_SCALE = 0.05
+
+# ── 7. WOM and diffusion constants ──────────────────────────────────
+
+NEGATIVE_WOM_DECAY_RATE = 0.05
+POSITIVE_WOM_DECAY_RATE = 0.10
+WOM_AWARENESS_BOOST = 0.15
+WOM_TRUST_PENALTY = 0.50
+POSITIVE_WOM_TRUST_BOOST = 0.10
+POSITIVE_WOM_BASE_RATE = 0.10
+WOM_COOLDOWN_PERIOD = 5
+SATISFIED_TRUST_THRESHOLD = 0.60
+EXIT_WOM_HARM_THRESHOLD = 0.30
+REVIEW_VISIBILITY = 0.35
+WOM_HARM_COOLDOWN_THRESHOLD = 0.08
+WOM_RAMP_RANGE = 0.25
+WOM_DAMPING_FACTOR = 0.35
+WOM_MAX_NEIGHBORS_PER_STEP = 3
+WOM_DIMINISHING_RATE = 0.50
+WOM_TRUST_SHIELD = 0.60
+
+# ── 8. Platform economics ───────────────────────────────────────────
+
+# Dark patterns are introduced after the platform has existing traction.
+INITIAL_CUMULATIVE_REVENUE = 10_000.0
+
+BASE_REVENUE_PER_USER = 5.0
+CHURN_REPLACEMENT_COST = 5.0
+REPUTATION_DAMAGE_COST = 0.5
+SUPPORT_COST_RATE = 0.2
+# Undetected exposures extract MORE revenue than detected ones:
+# the platform captures hidden charges, forced upsells, and drip fees
+# silently — no complaint, no churn signal, pure profit.
+HIDDEN_EXTRACTION_MULTIPLIER = 1.5
+# Revenue per user scales with platform reputation:
+# effective_rate = BASE_REVENUE_PER_USER × (reputation / 100) ^ exponent.
+# 0.5 (square root) gives a natural curve — moderate rep loss is mild,
+# severe rep loss is punishing.
+REPUTATION_REVENUE_EXPONENT = 0.5
+# Opportunity-cost baseline: the no-dark-pattern counterfactual is an
+# idealized platform that retains all its users at a high ("healthy")
+# reputation.  Used to project the revenue a clean platform would have earned,
+# so opportunity_cost = projected_clean − actual is coherent and never negative
+# for the control.  (Previously the projection was frozen at each scenario's
+# own depressed initial reputation, which made the control out-earn its own
+# baseline → a nonsensical negative opportunity cost.)
+# Set to the reputation a clean, well-run platform sustains in this model (the
+# control settles near here), so the control's residual opportunity cost is just
+# its natural attrition — small and positive — while dark-pattern scenarios show
+# large, intensity-monotonic opportunity costs.
+REPUTATION_HEALTHY_REFERENCE = 75.0
+
+# ── 9. Platform reputation ──────────────────────────────────────────
+#
+# Reputation (0-100) is modeled as public perception that MEAN-REVERTS toward a
+# health-based target each step, rather than an unbounded additive penalty walk.
+# The target is driven by aggregate user trust and circulating negative WOM
+# (the same "health" signal as the 0-1 platform.reputation), dragged down by the
+# platform's active dark-pattern intensity and cumulative user abandonment.
+# Mean-reversion keeps reputation a smooth, intensity-discriminating signal
+# instead of latching every dark-pattern scenario to the hard floor regardless
+# of intensity (the bug that made Low/Medium/High economically indistinguishable).
+
+DEFAULT_REPUTATION_RANGE: tuple[float, float] = (50, 70)
+# Weight of trust vs. (1 − negative WOM) in the reputation "health" signal.
+# Shared by both reputation variables so they stay consistent.
+REPUTATION_HEALTH_TRUST_WEIGHT = 0.7
+# Mean-reversion speed toward the target per step (≈ quarterly response).
+REPUTATION_ADJUST_RATE = 0.06
+# How much the platform's active dark-pattern intensity lowers the target.
+REPUTATION_INTENSITY_DRAG = 0.25
+# How much cumulative user abandonment (churn) lowers the target.
+REPUTATION_CHURN_DRAG = 0.15
+REPUTATION_NATURAL_CAP = 92.0
+# Even the most aggressive platform retains some baseline reputation
+# (brand presence, lock-in, no competitors, regulatory tolerance).
+REPUTATION_FLOOR = 2.0
+
+# ── 10. Adaptation thresholds ───────────────────────────────────────
+
+CHURN_ADAPTATION_THRESHOLD = 0.05
+ADAPTATION_INTENSITY_REDUCTION = 0.08
+ADAPTATION_SUPPORT_BOOST = 0.03
+ADAPTATION_INTENSITY_INCREASE = 0.01
+
+# ── 11. Tipping-point thresholds ────────────────────────────────────
+
+TRUST_COLLAPSE_THRESHOLD = 0.03    # 3% trust drop per step signals collapse
+CHURN_ACCELERATION_THRESHOLD = 0.03  # 3% of active users churn in a single step
+WOM_BURST_THRESHOLD = 0.40         # 40% of active users receiving negative WOM in a step
+TIPPING_POINT_PERSISTENCE = 5      # must hold for 5 consecutive steps
+
+# ── 12. Scenario presets ────────────────────────────────────────────
+#
+# Each scenario provides:
+#   patterns              – which dark patterns are active
+#   dark_pattern_intensity – global intensity scalar  [0, 1]
+#   adaptive_platform     – whether the platform adapts
+#   customer_support_quality – base support quality   [0, 1]
+#   reputation_range      – initial reputation (low, high)
+
+SCENARIOS: dict[str, dict] = {
+    "control": {
+        "patterns": {
+            "forced_trial": False,
+            "hard_cancel": False,
+            "drip_pricing": False,
+        },
+        "dark_pattern_intensity": 0.0,
+        "adaptive_platform": False,
+        "customer_support_quality": 0.50,
+        "reputation_range": (70, 80),
+    },
+    "low_intensity": {
+        "patterns": {
+            "forced_trial": True,
+            "hard_cancel": True,
+            "drip_pricing": True,
+        },
+        "dark_pattern_intensity": 0.20,
+        "adaptive_platform": False,
+        "customer_support_quality": 0.40,
+        "reputation_range": (60, 75),
+    },
+    "medium_intensity": {
+        "patterns": {
+            "forced_trial": True,
+            "hard_cancel": True,
+            "drip_pricing": True,
+        },
+        # 0.40 is the canonical "medium" intensity reported in the paper
+        # (Table I). Keep this in lockstep with the manuscript.
+        "dark_pattern_intensity": 0.40,
+        "adaptive_platform": False,
+        "customer_support_quality": 0.30,
+        "reputation_range": (50, 70),
+    },
+    "high_intensity": {
+        "patterns": {
+            "forced_trial": True,
+            "hard_cancel": True,
+            "drip_pricing": True,
+        },
+        "dark_pattern_intensity": 0.80,
+        "adaptive_platform": False,
+        "customer_support_quality": 0.20,
+        "reputation_range": (40, 60),
+    },
+    "forced_trial_only": {
+        "patterns": {
+            "forced_trial": True,
+            "hard_cancel": False,
+            "drip_pricing": False,
+        },
+        "dark_pattern_intensity": 0.50,
+        "adaptive_platform": False,
+        "customer_support_quality": 0.30,
+        "reputation_range": (50, 70),
+    },
+    "hard_cancel_only": {
+        "patterns": {
+            "forced_trial": False,
+            "hard_cancel": True,
+            "drip_pricing": False,
+        },
+        "dark_pattern_intensity": 0.50,
+        "adaptive_platform": False,
+        "customer_support_quality": 0.30,
+        "reputation_range": (50, 70),
+    },
+    "drip_pricing_only": {
+        "patterns": {
+            "forced_trial": False,
+            "hard_cancel": False,
+            "drip_pricing": True,
+        },
+        "dark_pattern_intensity": 0.50,
+        "adaptive_platform": False,
+        "customer_support_quality": 0.30,
+        "reputation_range": (50, 70),
+    },
+    "mixed_exploitative": {
+        "patterns": {
+            "forced_trial": True,
+            "hard_cancel": True,
+            "drip_pricing": True,
+        },
+        "dark_pattern_intensity": 0.70,
+        "adaptive_platform": False,
+        "customer_support_quality": 0.15,
+        "reputation_range": (40, 55),
+    },
+    "mixed_adaptive": {
+        "patterns": {
+            "forced_trial": True,
+            "hard_cancel": True,
+            "drip_pricing": True,
+        },
+        "dark_pattern_intensity": 0.50,
+        "adaptive_platform": True,
+        "customer_support_quality": 0.40,
+        "reputation_range": (50, 70),
+    },
+    "clean_competitor": {
+        "patterns": {
+            "forced_trial": False,
+            "hard_cancel": False,
+            "drip_pricing": False,
+        },
+        "dark_pattern_intensity": 0.0,
+        "adaptive_platform": False,
+        "customer_support_quality": 0.80,
+        "social_influence_strength": 0.25,
+        "retention_bonus": 3.0,
+        "reputation_range": (80, 92),
+    },
+}
+
+# ── 13. DEFAULTS dict (backward compat with FastAPI service) ────────
+
+DEFAULTS: dict[str, object] = {
+    "num_users": DEFAULT_NUM_AGENTS,
+    "network_type": DEFAULT_NETWORK_TYPE,
+    "avg_degree": DEFAULT_AVG_NODE_DEGREE,
+    "rewire_prob": DEFAULT_REWIRING_PROB,
+    "max_steps": DEFAULT_MAX_STEPS,
     "seed": 42,
     "dark_pattern_intensity": 0.40,
     "pattern_forced_trial": True,
@@ -11,33 +390,6 @@ DEFAULTS = {
     "pattern_drip_pricing": True,
     "customer_support_quality": 0.30,
     "adaptive_platform": False,
-    "social_influence_strength": 0.18,
-    "review_visibility": 0.35,
-    "trust_baseline_mean": 0.75,
-    "trust_baseline_sd": 0.10,
-    "digital_literacy_mean": 0.55,
-    "digital_literacy_sd": 0.18,
-    "manipulation_sensitivity_mean": 0.60,
-    "manipulation_sensitivity_sd": 0.15,
-    "social_activity_mean": 0.40,
-    "social_activity_sd": 0.18,
-    "complaint_propensity_mean": 0.35,
-    "complaint_propensity_sd": 0.18,
-    "switching_cost_mean": 0.45,
-    "switching_cost_sd": 0.20,
-    "alpha_exposure_to_trust": 0.22,
-    "beta_support_recovery": 0.10,
-    "delta_exposure_to_harm": 0.18,
-    "gamma_social_trust_loss": 0.12,
-    "theta0": -2.20,
-    "theta_trust": 2.80,
-    "theta_harm": 1.90,
-    "theta_social": 1.20,
-    "theta_switching_cost": 1.60,
-    "forced_trial_exposure_prob": 0.12,
-    "forced_trial_severity": 0.45,
-    "hard_cancel_exposure_prob": 0.10,
-    "hard_cancel_severity": 0.50,
-    "drip_pricing_exposure_prob": 0.08,
-    "drip_pricing_severity": 0.70,
+    "social_influence_strength": DEFAULT_SOCIAL_INFLUENCE_STRENGTH,
+    "review_visibility": REVIEW_VISIBILITY,
 }

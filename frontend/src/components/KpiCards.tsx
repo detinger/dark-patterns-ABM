@@ -1,25 +1,26 @@
-import type { Metrics, PlatformState } from '../types'
+import type { Metrics } from '../types'
 
 type Props = {
   metrics: Metrics
-  platform: PlatformState
   steps: number
   maxSteps: number
 }
 
-const format = (value: number) => value.toFixed(3)
+const fmtPct = (v: number) => `${(v * 100).toFixed(1)}%`
+const fmtScore = (v: number) => v.toFixed(1)
+const fmtMoney = (v: number) => v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
-export function KpiCards({ metrics, platform, steps, maxSteps }: Props) {
-  const items = [
+export function KpiCards({ metrics, steps, maxSteps }: Props) {
+  const items: [string, string][] = [
     ['Step', `${steps} / ${maxSteps}`],
-    ['Mean trust', format(metrics.mean_trust)],
-    ['Mean harm', format(metrics.mean_harm)],
-    ['Weekly churn', format(metrics.churn_rate)],
-    ['Cumulative churn', format(metrics.cumulative_churn)],
-    ['Negative WOM', format(metrics.negative_wom_rate)],
-    ['Reputation', format(platform.reputation)],
-    ['Short-term revenue', format(platform.short_term_revenue)],
-    ['Long-term revenue', format(platform.long_term_revenue)],
+    ['Mean trust (incl. churned)', fmtPct(metrics.mean_trust_all)],
+    ['Mean harm', fmtPct(metrics.mean_harm)],
+    ['Weekly churn', fmtPct(metrics.churn_rate)],
+    ['Cumulative churn', fmtPct(metrics.cumulative_churn)],
+    ['Negative WOM', fmtPct(metrics.negative_wom_rate)],
+    ['Reputation (0–100)', fmtScore(metrics.platform_reputation)],
+    ['Cumulative revenue', fmtMoney(metrics.cumulative_revenue)],
+    ['Cumulative Projected Revenue', fmtMoney(metrics.cumulative_projected_revenue ?? 0)],
   ]
 
   return (

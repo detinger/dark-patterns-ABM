@@ -1,0 +1,27 @@
+{
+  "title": "Dark Patterns ABM: replication package",
+  "upload_type": "software",
+  "description": "Replication package for an agent-based model (ABM) of trust erosion caused by dark patterns on a digital platform, accompanying the manuscript submitted to Technology in Society. A single deterministic entry point (reproduce.py) runs seven scenarios over many random seeds and re-generates every table, figure, and data product reported in the paper. The package bundles a pinned environment (requirements.txt / requirements.lock / environment.yml / Dockerfile) so results reproduce exactly on the same code and dependency versions. NOTE: before publishing this deposit, add each creator's ORCID via the 'orcid' field in the creators list (e.g. \"orcid\": \"0000-0000-0000-0000\"); placeholders are intentionally omitted here so no fake identifier is recorded.",
+  "creators": [
+    {
+      "name": "Pivac, Dejana",
+      "affiliation": "Faculty of Informatics, Juraj Dobrila University of Pula"
+    },
+    {
+      "name": "Etinger, Darko",
+      "affiliation": "Faculty of Informatics, Juraj Dobrila University of Pula"
+    }
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "version": "1.0.0",
+  "language": "eng",
+  "keywords": [
+    "dark patterns",
+    "agent-based modeling",
+    "trust",
+    "Mesa",
+    "reproducibility",
+    "computational social science"
+  ]
+}
