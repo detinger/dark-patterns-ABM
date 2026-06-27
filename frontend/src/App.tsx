@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import './styles.css'
 import { ChartsPanel } from './components/ChartsPanel'
 import { ControlPanel } from './components/ControlPanel'
 import { KpiCards } from './components/KpiCards'
-import { NetworkGraphPanel } from './components/NetworkGraphPanel'
 import { SimulationList } from './components/SimulationList'
 import { TippingPointsPanel } from './components/TippingPointsPanel'
 import { useSimulation } from './hooks/useSimulation'
+
+const NetworkGraphPanel = lazy(() =>
+  import('./components/NetworkGraphPanel').then((m) => ({ default: m.NetworkGraphPanel })),
+)
 
 type ThemeMode = 'light' | 'dark'
 
@@ -88,6 +91,7 @@ export default function App() {
             liveRunning={liveRunning}
             liveSpeed={liveSpeed}
             liveTransport={liveTransport}
+            activeParams={state?.params ?? null}
           />
           <SimulationList
             simulations={simulations}
@@ -100,15 +104,17 @@ export default function App() {
         <div className="content">
           {state ? (
             <>
-              <KpiCards metrics={state.metrics} platform={state.platform} steps={state.steps} maxSteps={state.max_steps} />
+              <KpiCards metrics={state.metrics} steps={state.steps} maxSteps={state.max_steps} />
               <TippingPointsPanel tippingPoints={state.tipping_points} />
               <ChartsPanel series={timeseries} tippingPoints={state.tipping_points} />
-              <NetworkGraphPanel
-                simulationId={state.simulation_id}
-                steps={state.steps}
-                snapshot={state.network_snapshot}
-                recentEvents={state.recent_events}
-              />
+              <Suspense fallback={<section className="panel"><p>Loading network graph…</p></section>}>
+                <NetworkGraphPanel
+                  simulationId={state.simulation_id}
+                  steps={state.steps}
+                  snapshot={state.network_snapshot}
+                  recentEvents={state.recent_events}
+                />
+              </Suspense>
             </>
           ) : (
             <section className="panel empty-state">

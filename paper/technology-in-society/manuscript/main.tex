@@ -1,0 +1,253 @@
+%% Technology in Society (Elsevier): single-column CAS template.
+%%
+%% This file is written for the official Elsevier els-cas bundle (cas-sc.cls,
+%% cas-model2-names.bst for author-date). To build:
+%%   1. Open the Overleaf "Elsevier CAS (single column)" template, OR download
+%%      els-cas-templates from CTAN (https://ctan.org/pkg/els-cas-templates).
+%%   2. Add this main.tex, references.bib, paper_macros.tex, the tables/ and
+%%      figures/ folders (copied from the replication package by build_manuscript).
+%%   3. Compile with pdfLaTeX + BibTeX.
+%%
+%% Reference style: Chicago author-date (cas-model2-names) per the journal's
+%% author-guide PDF. To switch to numbered style, change \bibliographystyle to
+%% cas-model1-num and recompile (no other edits needed).
+
+\documentclass[a4paper,fleqn]{cas-sc}
+
+\usepackage{booktabs}
+\usepackage{amsmath}
+% cas-sc does not load natbib; author-date \citep/\citet need it (cas-model2-names).
+\usepackage[authoryear]{natbib}
+
+% All quantitative results are injected from the simulation; nothing is hardcoded.
+\input{paper_macros}
+
+\begin{document}
+
+\shorttitle{Dark Patterns and the Erosion of User Trust}
+\shortauthors{D. Pivac and D. Etinger}
+
+\title[mode=title]{Simulating the Long-Term Impact of Dark Patterns on User Trust: A Network-Based Agent-Based Model}
+
+\author[1]{Dejana Pivac}
+\cormark[1]
+\ead{dpivac@fipu.hr}
+
+\author[1]{Darko Etinger}
+\ead{darko.etinger@unipu.hr}
+
+\affiliation[1]{organization={Faculty of Informatics, Juraj Dobrila University of Pula},
+                city={Pula},
+                country={Croatia}}
+
+\cortext[1]{Corresponding author.}
+
+\begin{abstract}
+Dark patterns are deceptive interface design strategies that manipulate users into unintended decisions, yet their long-term systemic effects on user trust, platform reputation, and economic sustainability remain poorly understood. Existing research focuses predominantly on cross-sectional detection and classification of dark patterns, with limited attention to their cumulative and emergent consequences over time. This paper presents a stochastic, network-based agent-based model (ABM) that simulates the long-term dynamics of trust erosion caused by dark patterns in digital platforms. The model incorporates heterogeneous user agents with type-driven behavioral traits, per-pattern exposure--detection--harm pipelines, social contagion through negative word-of-mouth, logistic churn mechanics, and platform-level reputation and economics. Across seven scenarios simulated over \maxSteps\ time steps (six years) and replicated over \numReplicates\ random seeds, even low-intensity dark patterns trigger trust collapse (at step \lowCollapseStep) and extractive divergence, while medium intensity triggers all four formal tipping points and high intensity drives \highChurn\ cumulative churn and near-total trust destruction. The model formalizes four tipping points and demonstrates that dark patterns trade short-term revenue gains for a self-reinforcing, contagion-driven erosion of trust that destroys greater value over the long run. These findings contribute a computational framework for reasoning about the systemic harms of deceptive design and offer implications for regulatory policy and platform governance.
+\end{abstract}
+
+\begin{highlights}
+\item A network-based ABM simulates six-year trust erosion from dark patterns.
+\item Four formal tipping points mark qualitative regime shifts in platform health.
+\item Low-intensity dark patterns collapse trust and trigger tipping points while revenue stays near control.
+\item Skeptics and activists churn fast; naive users stay, trapped and harmed.
+\item Dark patterns are a self-defeating, value-destroying platform strategy.
+\end{highlights}
+
+\begin{keywords}
+dark patterns \sep agent-based modeling \sep trust erosion \sep deceptive design \sep digital platforms \sep churn dynamics
+\end{keywords}
+
+\maketitle
+
+% =====================================================================
+\section{Introduction}
+% =====================================================================
+Digital platforms increasingly rely on interface design to shape user behavior, and the boundary between persuasive design and manipulation has become a central concern in both HCI research and consumer protection policy \citep{gray2018,yi2025}. Dark patterns, defined as interface elements that exploit cognitive biases to steer users into decisions misaligned with their preferences, have been documented across e-commerce \citep{mathur2019}, cookie consent banners \citep{berens2024}, mobile applications \citep{gunawan2021}, and emerging technologies such as mixed reality \citep{meinhardt2025}, voice assistants \citep{deconca2023}, and the LLM-based web agents that increasingly act on users' behalf \citep{ersoy2026}.
+
+The prevalence of dark patterns is substantial. An automated crawl of 11{,}000 shopping websites found 1{,}818 dark pattern instances across 15 types \citep{mathur2019}. The OECD reports that many e-commerce websites feature multiple dark patterns simultaneously, with particularly high rates in cookie consent interfaces \citep{oecd2022}. An analysis of 240 popular mobile applications found that the overwhelming majority (around 95\%) contained at least one dark pattern \citep{digeronimo2020}. These patterns exploit cognitive biases such as framing effects, scarcity illusions, social proof, and anchoring to manipulate users into purchases, data disclosure, and subscription retention that they would not otherwise choose.
+
+Experimental evidence confirms the effectiveness of dark patterns. \citet{luguri2021} demonstrated that users exposed to mild dark patterns were more than twice as likely to sign up for an unwanted service, while aggressive dark patterns increased subscription rates nearly fourfold. \citet{bogliacino2026} found that dark patterns increase choice inconsistency in privacy decisions, with hidden-information strategies being particularly effective. \citet{papenmeier2025} showed that external cookie-banner design factors strongly influence acceptance behavior, acting alongside users' internal privacy preferences rather than simply overriding them.
+
+Despite this growing empirical base, existing research is predominantly static: it captures snapshots of dark pattern deployment and user response at single points in time. What remains largely unexplored is how dark patterns interact with social networks, cumulative trust erosion, word-of-mouth dynamics, and platform economics over extended periods. The question of whether dark patterns that appear profitable in the short term eventually lead to systemic platform decline, and at what intensity threshold this occurs, has not been addressed computationally.
+
+Agent-based modeling (ABM) provides a natural methodological framework for this investigation. ABMs can represent heterogeneous agents, network-mediated social influence, bounded rationality, and emergent macro-level phenomena from micro-level behavioral rules \citep{mesa2024}. While ABMs have been applied to trust dynamics in online markets and social systems, their application to dark patterns specifically has not been explored.
+
+This paper makes three contributions. First, it presents a stochastic, network-based ABM that simulates the long-term impact of dark patterns on user trust, churn, word-of-mouth, platform reputation, and economics. Second, it defines and implements four formal tipping-point detection mechanisms that identify qualitative regime shifts in platform dynamics. Third, it provides simulation results across seven scenarios (replicated over \numReplicates\ random seeds and reported with confidence intervals) that demonstrate the non-linear relationship between dark pattern intensity and platform sustainability, revealing that even moderate dark pattern deployment creates self-reinforcing trust--reputation feedback loops. To ensure full reproducibility, the model, the experiment driver, and all generated data are released as an open replication package (Section~\ref{sec:availability}).
+
+% =====================================================================
+\section{Related Work}
+% =====================================================================
+\subsection{Dark Pattern Taxonomies and Detection}
+The academic study of dark patterns began with Brignull's taxonomy \citep{brignull2010} and was formalized by \citet{gray2018}, who identified five strategies (nagging, obstruction, sneaking, interface interference, and forced action) through analysis of UX practitioner discourse. \citet{mathur2019} developed automated detection techniques and discovered 1{,}818 dark pattern instances across 11{,}000 shopping websites. \citet{li2024} proposed one of the most comprehensive taxonomies to date, noting that existing detection tools cover only a fraction of known patterns. \citet{isola2025} offered a legal classification mapping dark pattern types onto the EU Unfair Commercial Practices Directive categories of misleading omission, misleading action, harassment, undue influence, and coercion.
+
+\subsection{Experimental Evidence of Dark Pattern Effectiveness}
+Controlled experiments have quantified the behavioral impact of dark patterns. \citet{luguri2021} conducted two large-scale experiments showing that hidden information, trick question, and obstruction strategies were particularly effective at manipulating consumers; critically, they found that decision architecture, not price, drove consumer purchasing decisions. \citet{bogliacino2026} introduced the ``transaction test'' measuring choice inconsistency and found that transparency-based remedies failed to mitigate dark pattern effects. \citet{berens2024} demonstrated that the visual representation and labeling of reject/accept options significantly impact cookie consent decisions. \citet{koh2023} found that limited-time messages were significantly more effective than other urgency-based patterns, and that older individuals showed greater susceptibility. \citet{fagan2024} categorized digital dark patterns under the FORCES acronym and noted that the power of these techniques is set to increase with advances in predictive algorithms, generative AI, and virtual reality.
+
+\subsection{Vulnerability and Platform Context}
+Research has increasingly examined who is most vulnerable to dark patterns. \citet{rossi2024} mapped micro, meso, and macro vulnerability factors, finding that digital vulnerability does not overlap with traditionally protected groups but depends on multifaceted situational and dispositional factors. \citet{gunawan2021} compared dark patterns across mobile and web modalities, discovering that mobile platforms contain the most dark patterns for the large majority of services examined. \citet{deconca2023} analyzed deceptive design in virtual assistants, identifying patterns such as price-comparison prevention and misdirection in voice interfaces. \citet{chalhoub2024} examined consent and permission heuristics for smart-home devices, and \citet{lu2024} explored end-user empowerment interventions against dark patterns.
+
+\subsection{Regulatory Landscape}
+The regulatory response to dark patterns has accelerated. The EU Digital Services Act (Article~25) prohibits online interfaces that deceive or manipulate users, although the scope of this prohibition has been critiqued \citep{isola2025}. The OECD proposed a working definition of dark commercial patterns as practices that ``subvert or impair consumer autonomy, decision-making or choice'' \citep{oecd2022}. \citet{gunawan2025} examined how interdisciplinary methods from HCI can support enforcement, noting that the gap between academic evidence and regulatory action remains significant. \citet{yi2025} systematically reviewed the regulatory scholarship across law and HCI.
+
+\subsection{Trust Dynamics and Agent-Based Modeling}
+While computational and game-theoretic models have long been used to study trust and reputation in online markets \citep{dellarocas2006}, and agent-based models have been applied to opinion dynamics \citep{deffuant2000} and word-of-mouth propagation \citep{goldenberg2001}, their specific application to dark patterns is novel. \citet{bosch2016} introduced the concept of ``privacy dark strategies'' and documented seven privacy dark patterns from a psychological perspective, establishing the theoretical connection between design manipulation and trust erosion. \citet{cara2019} noted in an early systematic review that although dark patterns seem to work in the short term, once the user is aware of them they disadvantage the brand, leading to mistrust. This insight, that short-term effectiveness produces long-term harm, motivates the temporal modeling approach of this paper. The health-advertising study by \citet{downing2022} further illustrates the systemic nature of dark pattern harms that extend beyond individual interface interactions. Complementary datasets for detection research continue to emerge \citep{yada2022}.
+
+% =====================================================================
+\section{Model Design}
+\label{sec:model}
+% =====================================================================
+The model is implemented using the Mesa framework for agent-based modeling in Python \citep{mesa2024}. We summarize it here following the ODD (Overview, Design concepts, Details) protocol \citep{grimm2020}; a complete ODD description is provided as Supplementary Material.
+
+\subsection{Overview}
+The model simulates a digital platform with $N$ heterogeneous user agents connected through a social network, interacting with a single platform agent that may deploy dark patterns. Each simulation step represents one week, with a default horizon of \maxSteps\ steps (six years). Each step follows an exposure, detection, harm, social-diffusion, recovery, and churn pipeline.
+
+\subsection{User Agents}
+User agents are heterogeneous, drawn from three behavioral archetypes informed by the multi-dimensional vulnerability framing in the dark patterns literature \citep{rossi2024}:
+\begin{itemize}
+\item \textbf{Naive users} (50\%): high baseline trust, low digital literacy, low manipulation sensitivity, high switching costs, and elevated trust resilience that dampens trust loss.
+\item \textbf{Skeptic users} (30\%): moderate baseline trust, high digital literacy, higher manipulation sensitivity, and lower switching costs.
+\item \textbf{Activist users} (20\%): moderate baseline trust, high digital literacy, the highest manipulation sensitivity, the lowest switching costs, and elevated social activity.
+\end{itemize}
+All traits are sampled from Beta$(5,5)$ distributions scaled to type-specific ranges, producing bell-shaped variation around type midpoints.
+
+\subsection{Dark Pattern Mechanics}
+The model implements three dark pattern types grounded in the literature \citep{mathur2019,luguri2021}: \emph{forced trial} (high short-term gain weight, moderate detectability; models forced conversions and upsells), \emph{hard cancellation} (moderate gain weight, higher detectability; models subscriber retention through obstruction), and \emph{drip pricing} (high base harm, moderate detectability; models hidden-fee extraction). Each step, active users may be exposed to each enabled pattern with probability proportional to a global dark pattern intensity. An exposure-buildup ramp ensures that the first three encounters with a pattern deliver only partial harm, modeling gradual habituation to manipulative cues.
+
+\subsection{Trust and Harm Dynamics}
+Trust loss per exposure is governed by
+\begin{equation}
+\Delta T = -\alpha \, h_{\text{scaled}} \, s_m \, (0.6 + 0.8\,l_d)\,(1 - r_t),
+\end{equation}
+where $\alpha = 0.22$ is the exposure-to-trust coefficient, $h_{\text{scaled}}$ is the scaled harm from the pattern, $s_m$ is manipulation sensitivity, $l_d$ is digital literacy, and $r_t$ is trust resilience. Cumulative harm accumulates with logistic saturation,
+\begin{equation}
+\Delta H = \delta \, h_{\text{scaled}} \, (0.7 + 0.6\,s_m)\,\max(0, 1 - H),
+\end{equation}
+with $\delta = 0.18$; the saturation term $\max(0, 1-H)$ models desensitization. Per-step caps on trust loss (0.035) and harm gain (0.04) ensure gradual dynamics consistent with longitudinal trust patterns.
+
+\subsection{Social Contagion}
+Negative word-of-mouth (WOM) propagates through the social network with realistic dynamics: a harm-gated cooldown (users must accumulate harm before spreading negative WOM), a gradual ramp-up with accumulated harm, global damping to prevent unrealistic cascades, a maximum of three neighbors contacted per step, and receiver skepticism (diminishing returns from repeated messages and trust-scaled shielding, whereby high-trust users are more skeptical of complaints). Positive WOM is strictly gated: only users with zero harm and zero cumulative exposure spread positive sentiment.
+
+\subsection{Churn Model}
+Churn follows a logistic model with a trust-deficit dead zone,
+\begin{equation}
+P_{\text{churn}} = \sigma\!\left(\theta_0 + \theta_T \max(0, (1-T) - D_z) + \theta_H H + \theta_S W - \theta_{SC}\, SC\right),
+\end{equation}
+where $\theta_0 = -8.0$, $\theta_T = 3.5$, $D_z = 0.30$, $\theta_H = 1.9$, $\theta_S = 1.2$, and $\theta_{SC} = 1.6$. The dead zone ensures that users with trust above approximately 0.70 experience no trust-driven churn pressure, producing realistic retention for healthy platforms.
+
+\subsection{Platform Economics and Reputation}
+Platform economics track subscription revenue (scaled by a reputation factor $(R/100)^{0.5}$), dark pattern extraction revenue (with a $1.5\times$ multiplier for undetected exposures), and costs (churn replacement, support, and WOM damage). Platform reputation operates on a 0--100 scale with a floor of 2.0 and a natural cap of 92.0. Recovery mechanisms, namely customer support and natural trust recovery toward a harm-adjusted ceiling $\text{baseline}\times(1-\text{harm})$, are both suppressed by active dark pattern intensity.
+
+\subsection{Tipping-Point Detection}
+The model implements four formal tipping points, each requiring five consecutive steps of activation: \emph{Trust Collapse} (mean trust of active users $\le 0.50$), \emph{Social Contagion} (negative WOM rate $\ge 0.22$), \emph{Churn Cascade} (cumulative churn $\ge 0.35$), and \emph{Extractive Divergence} (revenue gap $\ge 20\%$ of short-term revenue with cumulative churn $\ge 0.15$).
+
+\subsection{Network Structure}
+Users are connected through a Watts--Strogatz small-world network ($N=\numAgents$ nodes, average degree 8, rewiring probability 0.08), which captures the clustering and short path lengths characteristic of real social networks.
+
+% =====================================================================
+\section{Simulation Results}
+% =====================================================================
+\subsection{Experimental Setup}
+We conducted simulations across seven scenarios with \numAgents\ users over \maxSteps\ steps: a control scenario with no dark patterns; three intensity levels (low $=0.20$, medium $=0.40$, high $=0.80$) with all three patterns active; and three single-pattern scenarios at intensity 0.50. Each scenario was replicated over \numReplicates\ independent random seeds; we report the mean and 95\% confidence interval across replicates. These intervals quantify across-seed Monte Carlo variation in the model rather than empirical calibration uncertainty. All results are regenerated end-to-end by the replication package (Section~\ref{sec:availability}).
+
+\subsection{Intensity Comparison}
+Table~\ref{tab:intensity} summarizes outcomes across intensity levels. The control scenario shows a healthy platform: only \ctrlChurn\ churn over six years (natural attrition), trust stable at \ctrlTrust, and reputation high and stable at \ctrlRep. Even at low intensity (0.20), the model reveals significant damage: \lowChurn\ churn, trust reduced to \lowTrust, and a positive opportunity cost of \lowOpp; Trust Collapse triggers at step \lowCollapseStep\ and Extractive Divergence at step \lowExtractiveStep. At medium intensity (0.40), all four tipping points trigger, with Trust Collapse occurring at step \medCollapseStep; over half the user base churns (\medChurn) and cumulative revenue falls to \medRev. High intensity (0.80) produces near-total platform destruction: \highChurn\ churn, mean trust of \highTrust, and Trust Collapse as early as step \highCollapseStep. Figures~\ref{fig:trust} and~\ref{fig:churn} show the trust and churn trajectories with confidence bands.
+
+\input{tables/table1_intensity}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_trust_by_intensity.pdf}
+\caption{Mean trust (all users) over time by dark-pattern intensity; shaded bands are 95\% confidence intervals across \numReplicates\ seeds.}
+\label{fig:trust}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_churn_by_intensity.pdf}
+\caption{Cumulative churn over time by dark-pattern intensity (mean $\pm$ 95\% CI).}
+\label{fig:churn}
+\end{figure}
+
+\subsection{Differential Impact by User Type}
+A clear pattern emerges across user types (Table~\ref{tab:churn_by_type}, Figure~\ref{fig:churntype}): skeptic and activist users churn faster than naive users due to higher manipulation sensitivity and lower switching costs. At medium intensity, \medSkepticChurnPct\ of skeptics and \medActivistChurnPct\ of activists have churned, compared with only \medNaiveChurnPct\ of naive users. Naive users nevertheless experience substantial trust decline, suggesting they remain on the platform despite a deteriorating experience, a form of digital lock-in consistent with the vulnerability literature \citep{rossi2024}.
+
+\input{tables/table2_churn_by_type}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_churn_by_type.pdf}
+\caption{Churn by user type and intensity (mean $\pm$ 95\% CI, percent of each type).}
+\label{fig:churntype}
+\end{figure}
+
+\subsection{Per-Pattern Analysis}
+All three pattern types produce severe damage when deployed individually at intensity 0.50 (Table~\ref{tab:per_pattern}, Figure~\ref{fig:perpattern}). Forced trial is the most harmful, producing \forcedChurn\ churn; drip pricing is nearly as damaging (\dripChurn), while hard cancellation is the least destructive at \hardcancelChurn.
+
+\input{tables/table3_per_pattern}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_per_pattern.pdf}
+\caption{Single-pattern impact at intensity 0.50: cumulative churn and residual trust (mean $\pm$ 95\% CI).}
+\label{fig:perpattern}
+\end{figure}
+
+\subsection{Economic Analysis}
+The economic consequences scale sharply with intensity. The control scenario generates cumulative revenue of \ctrlRev\ over six years; medium intensity reduces this to \medRev\ and high intensity to \highRev. Dark-pattern extraction front-loads revenue, but declining reputation (falling to \medRep\ at medium and the 2.0 floor at high intensity) lowers per-user revenue while churn shrinks the active base, so the early extraction windfall is overtaken by long-run losses. The opportunity cost, the gap between an idealized full-retention projection at a healthy reputation and actual revenue, reaches \medOpp\ at medium and \highOpp\ at high intensity (Figure~\ref{fig:revenue}). Low intensity is the revealing case: cumulative revenue (\lowRev) stays within a few percent of the control, yet trust falls by more than 40\% (\lowTrust) and the platform still crosses the trust-collapse and extractive-divergence tipping points, so the ``safe'' use of mild dark patterns inflicts trust and reputation damage that the revenue line alone does not show, consistent with \citep{luguri2021}.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_revenue_by_intensity.pdf}
+\caption{Cumulative revenue over time by dark-pattern intensity (mean $\pm$ 95\% CI).}
+\label{fig:revenue}
+\end{figure}
+
+\subsection{Sensitivity Analysis}
+To assess robustness, we performed a local one-at-a-time sensitivity analysis around the medium-intensity baseline, varying dark pattern intensity, social influence strength, and customer support quality (Figure~\ref{fig:sensitivity}). Outcomes respond monotonically and intuitively: cumulative churn rises and residual trust falls with dark pattern intensity, while higher customer support quality measurably mitigates, but does not eliminate, the damage. The non-linear response to intensity is particularly pronounced in the low-to-moderate range.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_sensitivity.pdf}
+\caption{Local sensitivity of cumulative churn and mean trust to key parameters around the medium baseline (mean $\pm$ 95\% CI).}
+\label{fig:sensitivity}
+\end{figure}
+
+% =====================================================================
+\section{Discussion}
+% =====================================================================
+\subsection{The Self-Reinforcing Destruction Loop}
+The results reveal a consistent dynamic: trust erosion is self-reinforcing through social contagion. Direct harm drives negative WOM, which erodes trust among unexposed users, which in turn drives further WOM and churn; reputation falls as a downstream consequence, lowering per-user revenue. Dark-pattern extraction front-loads revenue while this contagion plays out, so a strategy that appears profitable early destroys more value than it captures over the long run. This extends \citet{cara2019}'s observation that dark patterns ``work in the short term'' but ``lead to mistrust''; our model quantifies the magnitude of the resulting value destruction.
+
+\subsection{Tipping Points as Regulatory Indicators}
+The four tipping points operationalize qualitative regime shifts that are difficult to observe empirically but emerge clearly in simulation. Trust Collapse consistently triggers first, suggesting it could serve as an early-warning indicator. Extractive Divergence, where short-term extraction diverges from sustainable platform value, captures the economic irrationality of dark patterns and may be particularly relevant for regulatory analysis. The finding that even low-intensity deployment produces measurable, persistent harm challenges the implicit assumption that ``mild'' dark patterns are acceptable, resonating with the OECD's observation that seemingly mild dark patterns may be as effective as aggressive ones \citep{oecd2022}.
+
+\subsection{Heterogeneous Vulnerability and Lock-In}
+The differential impact across user types illustrates the vulnerability dynamics described by \citet{rossi2024}. Naive users (low in digital literacy and manipulation sensitivity, high in switching costs) remain on the platform longest despite declining trust, creating a population of trapped, dissatisfied users. The users least equipped to recognize manipulation are thus most subject to prolonged exposure. Activist users, while they churn fastest, also amplify harm through social contagion before leaving: the users most capable of detecting dark patterns are also the most effective propagators of negative WOM.
+
+\subsection{Implications for Regulatory Policy}
+First, the non-linearity of outcomes suggests that intensity thresholds matter, so regulation that limits intensity may be more effective than binary bans. Second, the social-contagion dynamics show that dark patterns have externalities beyond the directly exposed user, strengthening the case for treating dark patterns as a public harm \citep{oecd2022}. Third, the economic analysis demonstrates that dark patterns are ultimately self-defeating: they reduce total revenue while destroying reputation, which could support ``enlightened self-interest'' arguments in industry engagement.
+
+\subsection{Limitations}
+Several limitations apply. First, the model parameters are informed by literature but not fitted to empirical data; trait distributions, formula coefficients, and tipping-point thresholds are not empirically calibrated. Second, the model assumes a single platform without competition. Third, it does not capture regulatory intervention, media coverage, or legal consequences. Fourth, the network structure is static. Future work should address empirical calibration through surveys and experiments, multi-platform competition dynamics, and adaptive regulatory mechanisms.
+
+% =====================================================================
+\section{Conclusion}
+% =====================================================================
+This paper presented a network-based agent-based model for simulating the long-term impact of dark patterns on user trust, churn, platform reputation, and economics. Across seven scenarios, replicated over \numReplicates\ seeds, the model demonstrates that dark patterns create a self-reinforcing destruction loop: even low-intensity deployment erodes trust and triggers tipping points with little visible revenue loss, while medium and high intensities produce catastrophic user loss and economic value destruction. By shifting from static detection toward dynamic, temporal analysis of systemic consequences, and by formalizing tipping points that quantify the feedback between trust erosion, social contagion, and economic outcomes, the model provides a computational framework for reasoning about the long-term harms of deceptive design. For regulators, the key insight is that there is no ``safe'' level of dark pattern deployment; for platform operators, dark patterns are a value-destroying strategy disguised as a revenue-generating one. Future work will focus on empirical calibration, multi-platform competitive dynamics, and integration with emerging regulatory frameworks.
+
+% =====================================================================
+% Journal-required declarations (CRediT, competing interest, funding, GenAI).
+% =====================================================================
+\input{declarations}
+
+% =====================================================================
+\section*{Data and Code Availability}
+\label{sec:availability}
+% =====================================================================
+The complete source code of the model, the experiment driver (\texttt{reproduce.py}), the pinned computational environment, and all raw and processed data required to regenerate every table and figure in this article are openly available in an archived replication package (Zenodo, \texttt{<ZENODO\_DOI>}; development repository at \texttt{<GITHUB\_URL>}). The model is additionally archived in the CoMSES Net Computational Model Library. See the package \texttt{REPRODUCTION.md} for exact instructions.
+
+\bibliographystyle{cas-model2-names}
+\bibliography{references}
+
+\end{document}

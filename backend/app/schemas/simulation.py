@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 
 
 class SimulationCreateRequest(BaseModel):
+    scenario: str | None = None  # If set, use named scenario from config.SCENARIOS
     num_users: int = Field(500, ge=50, le=5000)
     network_type: Literal["small_world", "scale_free", "random"] = "small_world"
     avg_degree: int = Field(8, ge=2, le=50)

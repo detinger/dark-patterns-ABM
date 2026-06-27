@@ -34,10 +34,11 @@ The project is intentionally designed as a **starter**: it already runs, but it 
 
 ### Frontend
 - Modern React dashboard
-- Simulation creation form
+- Simulation creation form with view/edit mode state machine (form locks when viewing a loaded simulation, unlocks for creating new ones)
+- Auto-zero intensity slider when all dark patterns are unchecked
 - KPI cards
 - Tipping-point status panel
-- Time-series charts
+- Time-series charts (trust, users, WOM, churn, reputation, per-step economics, cumulative economics, cost of dark patterns)
 - Full-network visualization with platform node, live legend, colored trust states, and always-on animated interaction effects
 - Live run mode with speed slider and selectable `WebSocket` or `Polling` transport
 - CSV export button for the active simulation
@@ -139,13 +140,17 @@ Represents one application user with traits such as:
 - complaint propensity
 - switching cost
 - trust baseline
+- trust resilience (type-dependent dampening of trust loss)
+
+Traits are sampled from Beta(5,5) distributions scaled to per-type ranges, producing realistic bell-shaped variation around type midpoints.
 
 Dynamic state includes:
 - current trust
 - perceived fairness
-- cumulative harm
+- cumulative harm (saturates logistically at 1.0)
 - negative WOM
 - active vs churned status
+- per-pattern exposure count (drives exposure buildup ramp)
 
 ### PlatformAgent
 Represents the platform/provider with variables such as:
@@ -172,22 +177,40 @@ Each simulation step roughly follows this order:
 
 1. **Direct exposure**
    - users may encounter active dark patterns
+   - first N encounters deliver partial harm (exposure buildup ramp)
 2. **Trust and harm update**
-   - trust declines, harm accumulates
+   - trust declines (dampened by trust resilience for naive users)
+   - harm accumulates with logistic saturation (slows as harm approaches 1.0)
 3. **Social diffusion**
-   - negative word-of-mouth spreads through the network
+   - harm-gated negative word-of-mouth spreads through the network
+   - WOM requires a cooldown (harm ≥ 0.08) then ramps up gradually with accumulated harm
+   - per-step spread capped at 3 neighbors, with 0.35 global damping factor
+   - receivers experience diminishing returns (repeated messages discount) and trust-shielding (high-trust users are more skeptical of complaints)
 4. **Recovery**
-   - support quality can partially repair trust
-5. **Churn decision**
-   - users may leave based on trust, harm, WOM, switching cost
-6. **Platform update**
-   - reputation and revenue proxies are updated
-7. **Optional adaptation**
+   - support quality can partially repair trust (harm-dampened effectiveness)
+   - partial recovery now works even during mild exposure (proportional to exposure severity)
+   - natural passive recovery: trust drifts slowly toward a harm-adjusted ceiling each step
+   - recovery ceiling = `baseline × (1 − harm)` — accumulated harm permanently depresses maximum recoverable trust
+   - both recovery mechanisms are weakened by active dark-pattern intensity: multiplied by `(1 − intensity)`
+5. **Positive WOM**
+   - only users with zero harm and zero cumulative exposure spread positive sentiment
+   - positive WOM trust boost capped at the harm-adjusted ceiling, not full baseline
+6. **Churn decision**
+   - logistic churn model with a trust-deficit dead zone: users whose trust is above ~0.70 experience no trust-driven churn pressure
+   - only when trust drops below the dead zone threshold does the trust deficit contribute to churn probability
+   - harm, negative WOM, and switching cost remain independent churn drivers
+7. **Natural attrition**
+   - small background churn unrelated to dark patterns (~0.01%/step)
+8. **Platform update**
+   - reputation updated (floor at 2.0, cap at 92.0)
+   - economics: subscription revenue + dark-pattern extraction (undetected exposures earn 1.5x), both scaled by reputation factor `(reputation/100)^0.5`
+   - opportunity cost tracked: projected no-DP revenue vs actual revenue
+9. **Optional adaptation**
    - platform may reduce dark pattern intensity if outcomes worsen
 
 ### Formal tipping-point detection
 
-The current implementation records a tipping point only when a rule remains true for **3 consecutive steps**.
+The current implementation records a tipping point only when a rule remains true for **5 consecutive steps**.
 
 - **Trust Collapse**
   - `mean_trust <= 0.50`
@@ -227,7 +250,7 @@ Example request body:
   "network_type": "small_world",
   "avg_degree": 8,
   "rewire_prob": 0.08,
-  "max_steps": 104,
+  "max_steps": 312,
   "seed": 42,
   "dark_pattern_intensity": 0.4,
   "pattern_forced_trial": true,
@@ -313,27 +336,29 @@ You should have installed:
 
 ---
 
-## Quick Local Scripts
+## Quick Local Script
 
-If you want the fastest local setup/run path from the repository root, use:
+If you want the fastest local setup/run path from the repository root, use the
+single cross-platform helper (`dev.py`) — it works the same on Windows, macOS,
+and Linux:
 
 ```bash
-./setup-local.sh
-./run-local.sh
+python dev.py setup
+python dev.py run
 ```
 
-What they do:
+What it does:
 
-- `./setup-local.sh`
+- `python dev.py setup`
   - creates `backend/.venv`
   - installs backend dependencies
   - installs frontend dependencies
   - creates `frontend/.env` from `.env.example` if needed
   - sets `VITE_API_BASE=http://localhost:8000/api`
-- `./run-local.sh`
+- `python dev.py run`
   - starts the backend with `python -m app.dev_server`
   - starts the frontend with `npm run dev`
-  - stops both services when you press `Ctrl+C`
+  - stops both services (and frees ports 8000/5173) when you press `Ctrl+C`
 
 ---
 
@@ -453,16 +478,15 @@ This mode reuses the same `DarkPatternTrustModel`, keeps the platform visible in
 1. Start the backend
 2. Start the frontend
 3. Open the dashboard in your browser
-4. Create a simulation using the left-hand form
-5. Click:
-   - `Step -1`
-   - `Step +1`
-   - `Run -10`
-   - `Run +10`
-   - `Run Live`
+4. Configure parameters and create a simulation using the left-hand form
+5. Use the run controls below the form:
+   - `Step +1` / `Step -1` for single-step navigation
+   - `Run +10` / `Run -10` for batch steps
+   - `Run Live` for continuous streaming
 6. Choose the live transport in the control panel:
    - `WebSocket` for the default low-overhead live stream
    - `Polling` if you want to compare behavior or need a simpler fallback
+7. Load a saved simulation from the session list — the form updates to show that simulation's parameters (locked). Click `New simulation` to configure and create another run.
 
 ### Mesa SolaraViz path
 
@@ -524,7 +548,7 @@ backend/results/batch_results.csv
 - `network_type = small_world`
 - `avg_degree = 8`
 - `rewire_prob = 0.08`
-- `max_steps = 104`
+- `max_steps = 312` (6 years at 1 step/week)
 
 ### Platform
 - `dark_pattern_intensity = 0.40`
@@ -547,8 +571,16 @@ Good next steps:
 - replace bounded normal sampling with proper Beta distributions [DONE]
 - calibrate parameters from literature or survey data [PLAN ADDED]
 - formalize tipping point detection [DONE]
-- store agent-type segments explicitly
-- improve revenue model
+- store agent-type segments explicitly [DONE — 3 types with per-type trait ranges]
+- improve revenue model [DONE — hidden extraction, revenue breakdown, initial revenue, reputation-discounted revenue, opportunity cost tracking]
+- add trust resilience per user type [DONE]
+- add harm saturation [DONE]
+- add exposure buildup ramp [DONE]
+- add harm-dampened recovery [DONE]
+- add realistic WOM spread dynamics (cooldown, ramp-up, damping, receiver skepticism) [DONE]
+- add partial recovery during exposure and natural trust recovery [DONE]
+- fix survivorship trust rebound (harm-adjusted ceiling, intensity-dampened recovery, strict positive WOM gate) [DONE]
+- calibrate baseline churn so healthy platforms maintain steady user base (trust-deficit dead zone, intercept tuning) [DONE]
 
 ### 2. Improve backend architecture
 Possible upgrades:
@@ -565,6 +597,9 @@ Possible upgrades:
 - parameter presets
 - richer network controls
 - dark mode and polished layout system [DONE]
+- form mode state machine with view/edit separation [DONE]
+- auto-zero intensity when no patterns selected [DONE]
+- form sync from loaded simulation params [DONE]
 
 ### 4. Improve research workflows
 Possible upgrades:
@@ -693,6 +728,10 @@ If the proxied health check returns `502`, Caddy cannot reach `API_UPSTREAM`. Co
 
 ---
 
+## Version history
+
+See `VERSION_NOTES.md` for a concise changelog.
+
 ## Recommended next files to add
 
 If you want to continue developing this seriously, the next high-value additions are:
@@ -700,7 +739,6 @@ If you want to continue developing this seriously, the next high-value additions
 - `backend/app/simulation/scenarios.py`
 - `backend/app/simulation/serialization.py`
 - `backend/app/analysis/`
-- `backend/tests/`
 - `frontend/src/pages/ComparisonPage.tsx`
 - `frontend/src/components/ScenarioPresetCards.tsx`
 - `frontend/src/components/ExportButtons.tsx`

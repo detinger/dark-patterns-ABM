@@ -1,0 +1,17 @@
+# LaTeX build artifacts (regenerate with: latexmk -pdf main.tex)
+*.abs
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+build.log
+main.pdf
+
+# els-cas author-icon thumbnails: on Overleaf the official template supplies
+# these; locally they are placeholders (see manuscript build notes). Not committed.
+thumbnails/

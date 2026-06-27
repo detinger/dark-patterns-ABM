@@ -1,0 +1,13 @@
+# LaTeX build artifacts (regenerate with: latexmk -pdf ODD-protocol.tex)
+*.abs
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.pdf
+odd-build.log
