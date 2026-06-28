@@ -15,3 +15,8 @@ main.pdf
 # els-cas author-icon thumbnails: on Overleaf the official template supplies
 # these; locally they are placeholders (see manuscript build notes). Not committed.
 thumbnails/
+
+# DOCX/flat build artifacts (regenerate from main.tex)
+main_flat.tex
+main.docx
+figures_png/

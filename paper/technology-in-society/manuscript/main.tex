@@ -16,31 +16,38 @@
 
 \usepackage{booktabs}
 \usepackage{amsmath}
+\usepackage{url}
 % cas-sc does not load natbib; author-date \citep/\citet need it (cas-model2-names).
 \usepackage[authoryear]{natbib}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
 
 % All quantitative results are injected from the simulation; nothing is hardcoded.
 \input{paper_macros}
 
 \begin{document}
 
-\shorttitle{Dark Patterns and the Erosion of User Trust}
-\shortauthors{D. Pivac and D. Etinger}
+\shorttitle{Dark Patterns as a Value-Destroying Strategy}
+\shortauthors{D. Etinger and D. Pivac}
 
-\title[mode=title]{Simulating the Long-Term Impact of Dark Patterns on User Trust: A Network-Based Agent-Based Model}
-
-\author[1]{Dejana Pivac}
-\cormark[1]
-\ead{dpivac@fipu.hr}
+\title[mode=title]{Dark Patterns as a Value-Destroying Strategy: An Agent-Based Network Model of Trust, Social Contagion, and Platform Sustainability}
 
 \author[1]{Darko Etinger}
+\cormark[1]
+\fnmark[1]
 \ead{darko.etinger@unipu.hr}
+\ead[orcid]{https://orcid.org/0000-0003-4444-7202}
+
+\author[1]{Dejana Pivac}
+\fnmark[1]
+\ead{dpivac@fipu.hr}
 
 \affiliation[1]{organization={Faculty of Informatics, Juraj Dobrila University of Pula},
                 city={Pula},
                 country={Croatia}}
 
 \cortext[1]{Corresponding author.}
+\fntext[1]{These authors contributed equally to this work.}
 
 \begin{abstract}
 Dark patterns are deceptive interface design strategies that manipulate users into unintended decisions, yet their long-term systemic effects on user trust, platform reputation, and economic sustainability remain poorly understood. Existing research focuses predominantly on cross-sectional detection and classification of dark patterns, with limited attention to their cumulative and emergent consequences over time. This paper presents a stochastic, network-based agent-based model (ABM) that simulates the long-term dynamics of trust erosion caused by dark patterns in digital platforms. The model incorporates heterogeneous user agents with type-driven behavioral traits, per-pattern exposure--detection--harm pipelines, social contagion through negative word-of-mouth, logistic churn mechanics, and platform-level reputation and economics. Across seven scenarios simulated over \maxSteps\ time steps (six years) and replicated over \numReplicates\ random seeds, even low-intensity dark patterns trigger trust collapse (at step \lowCollapseStep) and extractive divergence, while medium intensity triggers all four formal tipping points and high intensity drives \highChurn\ cumulative churn and near-total trust destruction. The model formalizes four tipping points and demonstrates that dark patterns trade short-term revenue gains for a self-reinforcing, contagion-driven erosion of trust that destroys greater value over the long run. These findings contribute a computational framework for reasoning about the systemic harms of deceptive design and offer implications for regulatory policy and platform governance.
@@ -73,7 +80,9 @@ Despite this growing empirical base, existing research is predominantly static: 
 
 Agent-based modeling (ABM) provides a natural methodological framework for this investigation. ABMs can represent heterogeneous agents, network-mediated social influence, bounded rationality, and emergent macro-level phenomena from micro-level behavioral rules \citep{mesa2024}. While ABMs have been applied to trust dynamics in online markets and social systems, their application to dark patterns specifically has not been explored.
 
-This paper makes three contributions. First, it presents a stochastic, network-based ABM that simulates the long-term impact of dark patterns on user trust, churn, word-of-mouth, platform reputation, and economics. Second, it defines and implements four formal tipping-point detection mechanisms that identify qualitative regime shifts in platform dynamics. Third, it provides simulation results across seven scenarios (replicated over \numReplicates\ random seeds and reported with confidence intervals) that demonstrate the non-linear relationship between dark pattern intensity and platform sustainability, revealing that even moderate dark pattern deployment creates self-reinforcing trust--reputation feedback loops. To ensure full reproducibility, the model, the experiment driver, and all generated data are released as an open replication package (Section~\ref{sec:availability}).
+This paper makes three contributions. First, it presents a stochastic, network-based ABM that simulates the long-term impact of dark patterns on user trust, churn, word-of-mouth, platform reputation, and economics. Second, it defines and implements four formal tipping-point detection mechanisms that identify qualitative regime shifts in platform dynamics. Third, it reveals, through systematic scenario analysis replicated over \numReplicates\ random seeds, that the relationship between dark pattern intensity and platform sustainability is non-linear and threshold-dependent: even low-intensity deployment crosses qualitative regime boundaries, and moderate intensity triggers all four formal tipping points, demonstrating that no safe level of dark pattern deployment exists within the modeled regime. To ensure full reproducibility, the model, the experiment driver, and all generated data are released as an open replication package (Section~\ref{sec:availability}).
+
+This model is intended as a theory-building and exploratory tool rather than a predictive or empirically calibrated one. Its purpose is to make explicit the qualitative consequences of a set of behaviorally grounded micro-rules and to identify the structural conditions under which trust erosion becomes self-reinforcing. Accordingly, our claims are conditional: they describe what follows \emph{given} the modeled mechanisms, not point forecasts of real-world platform trajectories. The confidence intervals we report quantify across-seed Monte Carlo precision and should not be read as empirical certainty; the substantive findings rest on the \emph{direction}, \emph{ordering}, and \emph{relative magnitude} of effects---which we show to be robust to parameter variation---rather than on specific numerical values such as the exact step at which a tipping point is crossed.
 
 % =====================================================================
 \section{Related Work}
@@ -91,7 +100,7 @@ Research has increasingly examined who is most vulnerable to dark patterns. \cit
 The regulatory response to dark patterns has accelerated. The EU Digital Services Act (Article~25) prohibits online interfaces that deceive or manipulate users, although the scope of this prohibition has been critiqued \citep{isola2025}. The OECD proposed a working definition of dark commercial patterns as practices that ``subvert or impair consumer autonomy, decision-making or choice'' \citep{oecd2022}. \citet{gunawan2025} examined how interdisciplinary methods from HCI can support enforcement, noting that the gap between academic evidence and regulatory action remains significant. \citet{yi2025} systematically reviewed the regulatory scholarship across law and HCI.
 
 \subsection{Trust Dynamics and Agent-Based Modeling}
-While computational and game-theoretic models have long been used to study trust and reputation in online markets \citep{dellarocas2006}, and agent-based models have been applied to opinion dynamics \citep{deffuant2000} and word-of-mouth propagation \citep{goldenberg2001}, their specific application to dark patterns is novel. \citet{bosch2016} introduced the concept of ``privacy dark strategies'' and documented seven privacy dark patterns from a psychological perspective, establishing the theoretical connection between design manipulation and trust erosion. \citet{cara2019} noted in an early systematic review that although dark patterns seem to work in the short term, once the user is aware of them they disadvantage the brand, leading to mistrust. This insight, that short-term effectiveness produces long-term harm, motivates the temporal modeling approach of this paper. The health-advertising study by \citet{downing2022} further illustrates the systemic nature of dark pattern harms that extend beyond individual interface interactions. Complementary datasets for detection research continue to emerge \citep{yada2022}.
+Computational and game-theoretic models have long studied trust and reputation in online markets. \citet{dellarocas2006} examines how reputation systems aggregate user feedback to discipline seller behavior; the focus is on mechanism design for cooperation under moral hazard, not on how individual interface choices erode trust over time or how negative signals propagate through a social network. Agent-based models have addressed opinion dynamics---the bounded-confidence model of \citet{deffuant2000} shows how local interaction rules produce macro-level polarization---but without asymmetric harm accumulation, per-pattern exposure pipelines, or any platform actor whose design choices drive the process. \citet{goldenberg2001} model word-of-mouth diffusion epidemiologically, distinguishing early adopters from imitators; they treat WOM as neutral information spread rather than as a harm-gated, trust-eroding signal whose intensity depends on the depth of individual injury. To the best of our knowledge, no prior model couples a platform's strategic design choices, heterogeneous user behavioral traits, and the resulting WOM-mediated trust--economy feedback loop in a single computational framework. \citet{bosch2016} introduced the concept of ``privacy dark strategies'' and documented seven privacy dark patterns from a psychological perspective, establishing the theoretical connection between design manipulation and trust erosion. \citet{cara2019} noted in an early systematic review that although dark patterns seem to work in the short term, once the user is aware of them they disadvantage the brand, leading to mistrust. This insight, that short-term effectiveness produces long-term harm, motivates the temporal modeling approach of this paper. The health-advertising study by \citet{downing2022} further illustrates the systemic nature of dark pattern harms that extend beyond individual interface interactions. Complementary datasets for detection research continue to emerge \citep{yada2022}.
 
 % =====================================================================
 \section{Model Design}
@@ -109,7 +118,7 @@ User agents are heterogeneous, drawn from three behavioral archetypes informed b
 \item \textbf{Skeptic users} (30\%): moderate baseline trust, high digital literacy, higher manipulation sensitivity, and lower switching costs.
 \item \textbf{Activist users} (20\%): moderate baseline trust, high digital literacy, the highest manipulation sensitivity, the lowest switching costs, and elevated social activity.
 \end{itemize}
-All traits are sampled from Beta$(5,5)$ distributions scaled to type-specific ranges, producing bell-shaped variation around type midpoints.
+All traits are sampled from Beta$(5,5)$ distributions scaled to type-specific ranges, producing bell-shaped variation around type midpoints. The type proportions (50\% naive, 30\% skeptic, 20\% activist) reflect the assumption that the majority of platform users are relatively low-awareness, consistent with the empirical finding that dark patterns remain effective at population scale \citep{luguri2021}; this distribution is a fixed modeling assumption rather than an estimated parameter, and varying it shifts quantitative magnitudes while preserving the monotonic intensity effects shown in the sensitivity analysis.
 
 \subsection{Dark Pattern Mechanics}
 The model implements three dark pattern types grounded in the literature \citep{mathur2019,luguri2021}: \emph{forced trial} (high short-term gain weight, moderate detectability; models forced conversions and upsells), \emph{hard cancellation} (moderate gain weight, higher detectability; models subscriber retention through obstruction), and \emph{drip pricing} (high base harm, moderate detectability; models hidden-fee extraction). Each step, active users may be exposed to each enabled pattern with probability proportional to a global dark pattern intensity. An exposure-buildup ramp ensures that the first three encounters with a pattern deliver only partial harm, modeling gradual habituation to manipulative cues.
@@ -125,8 +134,12 @@ where $\alpha = 0.22$ is the exposure-to-trust coefficient, $h_{\text{scaled}}$ 
 \end{equation}
 with $\delta = 0.18$; the saturation term $\max(0, 1-H)$ models desensitization. Per-step caps on trust loss (0.035) and harm gain (0.04) ensure gradual dynamics consistent with longitudinal trust patterns.
 
+The coefficients above are not fitted to data; they are illustrative values chosen to be behaviorally plausible and internally consistent with the experimental literature, in which mild dark patterns roughly double unwanted-conversion rates and aggressive ones increase them several-fold \citep{luguri2021}. We deliberately keep per-step trust and harm changes small (caps of 0.035 and 0.04) so that observable regime shifts arise from accumulation and contagion rather than from any single exposure. Because absolute values are not identified, all conclusions are stated in relative terms, and Section~\ref{sec:model} parameters are subjected to the variation reported in Section~4.6.
+
 \subsection{Social Contagion}
 Negative word-of-mouth (WOM) propagates through the social network with realistic dynamics: a harm-gated cooldown (users must accumulate harm before spreading negative WOM), a gradual ramp-up with accumulated harm, global damping to prevent unrealistic cascades, a maximum of three neighbors contacted per step, and receiver skepticism (diminishing returns from repeated messages and trust-scaled shielding, whereby high-trust users are more skeptical of complaints). Positive WOM is strictly gated: only users with zero harm and zero cumulative exposure spread positive sentiment.
+
+The asymmetry between negative and positive word-of-mouth is intentional and empirically motivated: negative experiences propagate more readily and weigh more heavily on others than positive ones \citep{baumeister2001}, and satisfied users rarely advocate unprompted. Gating positive WOM to fully unharmed, unexposed users encodes this negativity bias conservatively rather than arbitrarily; relaxing the gate would slow, but not qualitatively alter, the trust-erosion dynamics, since positive WOM cannot originate from the harmed population that drives contagion.
 
 \subsection{Churn Model}
 Churn follows a logistic model with a trust-deficit dead zone,
@@ -142,7 +155,7 @@ Platform economics track subscription revenue (scaled by a reputation factor $(R
 The model implements four formal tipping points, each requiring five consecutive steps of activation: \emph{Trust Collapse} (mean trust of active users $\le 0.50$), \emph{Social Contagion} (negative WOM rate $\ge 0.22$), \emph{Churn Cascade} (cumulative churn $\ge 0.35$), and \emph{Extractive Divergence} (revenue gap $\ge 20\%$ of short-term revenue with cumulative churn $\ge 0.15$).
 
 \subsection{Network Structure}
-Users are connected through a Watts--Strogatz small-world network ($N=\numAgents$ nodes, average degree 8, rewiring probability 0.08), which captures the clustering and short path lengths characteristic of real social networks.
+Users are connected through a Watts--Strogatz small-world network ($N=\numAgents$ nodes, average degree $\bar{k}=8$, rewiring probability $p=0.08$). This topology is chosen because it reproduces two hallmark properties of observed social networks: high local clustering (friends of friends tend to be friends) and short average path lengths. The parameter $p=0.08$ places the network in the Watts--Strogatz transition regime---retaining substantial clustering relative to a random graph while achieving short path lengths---and $\bar{k}=8$ approximates the active social connectivity typically assumed in platform-scale diffusion models \citep{goldenberg2001}. High local clustering is the structural assumption most consequential for the results: it creates echo chambers in which negative WOM recirculates within dense neighbourhoods before reaching the wider network, producing more pessimistic dynamics than lower-clustering topologies. This is confirmed by the topology sensitivity test in Section~4.6: a Barab\'asi--Albert scale-free network of equal size and mean degree produces the same qualitative regime shifts with quantitatively milder outcomes, attributable to its near-zero local clustering coefficient.
 
 % =====================================================================
 \section{Simulation Results}
@@ -150,19 +163,21 @@ Users are connected through a Watts--Strogatz small-world network ($N=\numAgents
 \subsection{Experimental Setup}
 We conducted simulations across seven scenarios with \numAgents\ users over \maxSteps\ steps: a control scenario with no dark patterns; three intensity levels (low $=0.20$, medium $=0.40$, high $=0.80$) with all three patterns active; and three single-pattern scenarios at intensity 0.50. Each scenario was replicated over \numReplicates\ independent random seeds; we report the mean and 95\% confidence interval across replicates. These intervals quantify across-seed Monte Carlo variation in the model rather than empirical calibration uncertainty. All results are regenerated end-to-end by the replication package (Section~\ref{sec:availability}).
 
+The implementation was verified against the specification through unit tests of the exposure--detection--harm pipeline and the tipping-point detectors, and through end-to-end regeneration of all reported tables and figures from the released replication package, ensuring that results reflect the intended model logic rather than implementation artifacts.
+
 \subsection{Intensity Comparison}
-Table~\ref{tab:intensity} summarizes outcomes across intensity levels. The control scenario shows a healthy platform: only \ctrlChurn\ churn over six years (natural attrition), trust stable at \ctrlTrust, and reputation high and stable at \ctrlRep. Even at low intensity (0.20), the model reveals significant damage: \lowChurn\ churn, trust reduced to \lowTrust, and a positive opportunity cost of \lowOpp; Trust Collapse triggers at step \lowCollapseStep\ and Extractive Divergence at step \lowExtractiveStep. At medium intensity (0.40), all four tipping points trigger, with Trust Collapse occurring at step \medCollapseStep; over half the user base churns (\medChurn) and cumulative revenue falls to \medRev. High intensity (0.80) produces near-total platform destruction: \highChurn\ churn, mean trust of \highTrust, and Trust Collapse as early as step \highCollapseStep. Figures~\ref{fig:trust} and~\ref{fig:churn} show the trust and churn trajectories with confidence bands.
+Table~\ref{tab:intensity} summarizes outcomes across intensity levels. The control scenario shows a healthy platform: only \ctrlChurn\ churn over six years (natural attrition), trust stable at \ctrlTrust, and reputation high and stable at \ctrlRep. Even at low intensity (0.20), the model reveals significant damage: \lowChurn\ churn, trust reduced to \lowTrust, and a positive opportunity cost of \lowOpp; Trust Collapse triggers at step \lowCollapseStep\ and Extractive Divergence at step \lowExtractiveStep. At medium intensity (0.40), all four tipping points trigger, with Trust Collapse occurring at step \medCollapseStep; over half the user base churns (\medChurn) and cumulative revenue falls to \medRev. Re-running the medium-intensity scenario with the Trust-Collapse threshold varied between 0.40 and 0.55 shifts the crossing step by at most eight steps (from step 46 to step 59) but preserves both its occurrence and its consistent position as the first tipping point to trigger across all seeds, indicating that the qualitative ordering is not an artifact of the chosen cutoff. High intensity (0.80) produces near-total platform destruction: \highChurn\ churn, mean trust of \highTrust, and Trust Collapse as early as step \highCollapseStep. Figures~\ref{fig:trust} and~\ref{fig:churn} show the trust and churn trajectories with confidence bands.
 
 \input{tables/table1_intensity}
 
-\begin{figure}[!t]
+\begin{figure}[pos=htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_trust_by_intensity.pdf}
 \caption{Mean trust (all users) over time by dark-pattern intensity; shaded bands are 95\% confidence intervals across \numReplicates\ seeds.}
 \label{fig:trust}
 \end{figure}
 
-\begin{figure}[!t]
+\begin{figure}[pos=htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_churn_by_intensity.pdf}
 \caption{Cumulative churn over time by dark-pattern intensity (mean $\pm$ 95\% CI).}
@@ -174,7 +189,7 @@ A clear pattern emerges across user types (Table~\ref{tab:churn_by_type}, Figure
 
 \input{tables/table2_churn_by_type}
 
-\begin{figure}[!t]
+\begin{figure}[pos=htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_churn_by_type.pdf}
 \caption{Churn by user type and intensity (mean $\pm$ 95\% CI, percent of each type).}
@@ -184,9 +199,11 @@ A clear pattern emerges across user types (Table~\ref{tab:churn_by_type}, Figure
 \subsection{Per-Pattern Analysis}
 All three pattern types produce severe damage when deployed individually at intensity 0.50 (Table~\ref{tab:per_pattern}, Figure~\ref{fig:perpattern}). Forced trial is the most harmful, producing \forcedChurn\ churn; drip pricing is nearly as damaging (\dripChurn), while hard cancellation is the least destructive at \hardcancelChurn.
 
+The ranking reflects the interaction between each pattern's base harm, detectability, and gain structure. Forced trial carries a high short-term gain weight and moderate detectability: it generates extraction revenue early while its moderate detectability allows exposure to continue before users recognize and react, sustaining harm accumulation over a longer window. Drip pricing has the highest base harm of the three---modelling the trust damage of discovering hidden fees after a purchasing decision has already been made---which drives rapid harm saturation and large negative WOM bursts; it falls marginally behind forced trial because its extraction window is shorter once users identify the price discrepancy. Hard cancellation, despite its obstructive character, is the least destructive because it has the highest detectability: users identify it quickly, and those who churn in response exit before prolonged harm accumulates, paradoxically limiting total damage to the remaining user base. This counter-intuitive result---that higher detectability reduces systemic harm by shortening the exposure window---has a direct design-policy implication: mandating that dark patterns be disclosed or made more salient may do more to limit systemic harm than post-hoc removal.
+
 \input{tables/table3_per_pattern}
 
-\begin{figure}[!t]
+\begin{figure}[pos=htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_per_pattern.pdf}
 \caption{Single-pattern impact at intensity 0.50: cumulative churn and residual trust (mean $\pm$ 95\% CI).}
@@ -196,7 +213,7 @@ All three pattern types produce severe damage when deployed individually at inte
 \subsection{Economic Analysis}
 The economic consequences scale sharply with intensity. The control scenario generates cumulative revenue of \ctrlRev\ over six years; medium intensity reduces this to \medRev\ and high intensity to \highRev. Dark-pattern extraction front-loads revenue, but declining reputation (falling to \medRep\ at medium and the 2.0 floor at high intensity) lowers per-user revenue while churn shrinks the active base, so the early extraction windfall is overtaken by long-run losses. The opportunity cost, the gap between an idealized full-retention projection at a healthy reputation and actual revenue, reaches \medOpp\ at medium and \highOpp\ at high intensity (Figure~\ref{fig:revenue}). Low intensity is the revealing case: cumulative revenue (\lowRev) stays within a few percent of the control, yet trust falls by more than 40\% (\lowTrust) and the platform still crosses the trust-collapse and extractive-divergence tipping points, so the ``safe'' use of mild dark patterns inflicts trust and reputation damage that the revenue line alone does not show, consistent with \citep{luguri2021}.
 
-\begin{figure}[!t]
+\begin{figure}[pos=htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_revenue_by_intensity.pdf}
 \caption{Cumulative revenue over time by dark-pattern intensity (mean $\pm$ 95\% CI).}
@@ -206,18 +223,63 @@ The economic consequences scale sharply with intensity. The control scenario gen
 \subsection{Sensitivity Analysis}
 To assess robustness, we performed a local one-at-a-time sensitivity analysis around the medium-intensity baseline, varying dark pattern intensity, social influence strength, and customer support quality (Figure~\ref{fig:sensitivity}). Outcomes respond monotonically and intuitively: cumulative churn rises and residual trust falls with dark pattern intensity, while higher customer support quality measurably mitigates, but does not eliminate, the damage. The non-linear response to intensity is particularly pronounced in the low-to-moderate range.
 
-\begin{figure}[!t]
+\begin{figure}[pos=htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_sensitivity.pdf}
 \caption{Local sensitivity of cumulative churn and mean trust to key parameters around the medium baseline (mean $\pm$ 95\% CI).}
 \label{fig:sensitivity}
 \end{figure}
 
+To complement this local analysis with a global design, we applied Morris elementary-effects screening \citep{morris1991} to seven parameters simultaneously: dark pattern intensity $\gamma$, the exposure-to-trust coefficient $\alpha$, the exposure-to-harm coefficient $\delta$, social influence strength $\kappa$, customer support quality $q$, and the churn logistic weights $\theta_T$ and $\theta_H$ (Table~\ref{tab:morris}, Figure~\ref{fig:morris}). The screening used $N=15$ trajectories with four levels, averaging three random seeds per sample point to reduce stochastic noise ($360$ model runs in total; bounds and nominal values stated in the caption). Three findings emerge from the $\mu^*/\sigma$ scatter. First, $\gamma$ (dark pattern intensity) dominates both outputs by a substantial margin: its $\mu^*$ is $3.2\times$ larger than the second-ranked parameter for cumulative churn ($0.70$ vs. $0.22$ for $\theta_T$) and $3.4\times$ for mean trust ($0.66$ vs. $0.20$ for $q$). Second, all signed elementary effects ($\mu$) point in the expected directions---higher intensity raises churn and lowers trust, better support lowers churn and raises trust, higher harm coefficient raises churn and lowers trust---so no parameter reverses the qualitative direction of the conclusions under the tested ranges. Third, the three lowest-ranked parameters ($\theta_H$, $\kappa$, $\alpha$) exhibit $\sigma > \mu^*$, indicating that their effects are interaction-dominated rather than additive; their small absolute $\mu^*$ values ($\le 0.09$) confirm they exert limited average influence. The near-zero effect of $\alpha$ is attributable to the per-step trust-loss cap (0.035), which binds before $\alpha$ variations translate into meaningfully different trajectories. Together, these results indicate that the model's primary conclusions---a monotonic, intensity-driven erosion of trust and increase in churn, partially mitigated by support quality---are robust to simultaneous perturbation of all seven screened parameters.
+
+\begin{figure}[pos=htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_morris.pdf}
+\caption{Morris elementary-effects screening ($\mu^*$ vs.\ $\sigma$) for cumulative churn (circles) and mean trust (squares). Points above the $\sigma = \mu^*$ diagonal (dashed) have interaction-dominated effects; points far to the right are most influential. Parameter bounds: $\gamma\in[0.05,0.80]$; $\alpha\in[0.11,0.33]$; $\delta\in[0.09,0.27]$; $\kappa\in[0.05,0.35]$; $q\in[0.10,0.70]$; $\theta_T\in[1.75,5.25]$; $\theta_H\in[0.95,2.85]$ ($\pm50\%$ of nominal for coefficients). $N=15$ trajectories, 4 levels, 3 seeds per point.}
+\label{fig:morris}
+\end{figure}
+
+\input{tables/table4_morris}
+
+We additionally tested sensitivity to network topology by re-running the medium-intensity scenario on a Barab\'asi--Albert scale-free network of equal size ($N=500$) and equal mean degree ($\bar{k}=8$, achieved with attachment parameter $m=4$), replicated across 20 seeds. All four tipping points trigger in every seed under both topologies, in the same qualitative order (Trust Collapse first, Extractive Divergence second, Social Contagion third, Churn Cascade fourth), with BA trigger steps shifted later by 3--30 steps relative to the Watts--Strogatz baseline. The trajectories are, however, not numerically identical: the BA network produces meaningfully lower cumulative churn ($46.8\%\pm2.1\%$ vs.\ $53.3\%\pm2.3\%$ on the same 20-seed subset; the 100-seed main result is $53.5\%$, Table~\ref{tab:intensity}) and higher residual mean trust ($0.274\pm0.018$ vs.\ $0.215\pm0.011$), with peak trajectory divergence of approximately $0.12$ trust units near step~90. The quantitative difference is attributable to network clustering rather than hub degree: Watts--Strogatz graphs maintain a high clustering coefficient that creates local WOM echo-chambers, where dense neighbourhood overlap amplifies contagion; Barab\'asi--Albert graphs have near-zero local clustering despite the same mean degree, slowing WOM diffusion without hub super-spreading (which is additionally constrained by the per-step neighbour cap of 3). The implication is that the paper's small-world baseline is more pessimistic than a scale-free topology: the reported churn and trust-erosion figures represent an upper bound conditional on high network clustering, and platforms with lower-clustering social graphs would experience somewhat less severe outcomes while preserving the same qualitative regime shifts.
+
 % =====================================================================
 \section{Discussion}
 % =====================================================================
 \subsection{The Self-Reinforcing Destruction Loop}
-The results reveal a consistent dynamic: trust erosion is self-reinforcing through social contagion. Direct harm drives negative WOM, which erodes trust among unexposed users, which in turn drives further WOM and churn; reputation falls as a downstream consequence, lowering per-user revenue. Dark-pattern extraction front-loads revenue while this contagion plays out, so a strategy that appears profitable early destroys more value than it captures over the long run. This extends \citet{cara2019}'s observation that dark patterns ``work in the short term'' but ``lead to mistrust''; our model quantifies the magnitude of the resulting value destruction.
+The results reveal a consistent dynamic: trust erosion is self-reinforcing through social contagion (Figure~\ref{fig:loop}). Direct harm drives negative WOM, which erodes trust among unexposed users, which in turn drives further WOM and churn; reputation falls as a downstream consequence, lowering per-user revenue. Dark-pattern extraction front-loads revenue while this contagion plays out, so a strategy that appears profitable early destroys more value than it captures over the long run. This extends \citet{cara2019}'s observation that dark patterns ``work in the short term'' but ``lead to mistrust''; our model quantifies the magnitude of the resulting value destruction.
+
+\begin{figure}[pos=htbp]
+\centering
+\begin{tikzpicture}[
+  >=Stealth,
+  box/.style={draw, rounded corners=2pt, fill=gray!8,
+              minimum width=2.0cm, minimum height=0.62cm,
+              align=center, font=\footnotesize},
+  fwd/.style={->, thick},
+  fb/.style={->, thick, dashed}
+]
+\node[box] (dp)    at (0,0)     {Dark Pattern\\Intensity};
+\node[box] (exp)   at (3.0,0)   {Exposure};
+\node[box] (harm)  at (6.0,0)   {Harm};
+\node[box] (trust) at (9.0,0)   {Trust Erosion};
+\node[box] (wom)   at (9.0,-1.8){Negative WOM};
+\node[box] (churn) at (6.0,-1.8){Churn};
+\node[box] (rep)   at (3.0,-1.8){Reputation};
+\node[box] (rev)   at (0,-1.8)  {Revenue Loss};
+\draw[fwd] (dp)    -- (exp);
+\draw[fwd] (exp)   -- (harm);
+\draw[fwd] (harm)  -- (trust);
+\draw[fwd] (trust) -- (wom);
+\draw[fwd] (wom)   -- (churn);
+\draw[fwd] (churn) -- (rep);
+\draw[fwd] (rep)   -- (rev);
+\draw[fb] (wom.north) to[bend right=45]
+  node[right, font=\scriptsize]{social contagion} (trust.south);
+\end{tikzpicture}
+\caption{The self-reinforcing destruction loop. Solid arrows trace the harm pipeline from dark pattern deployment through exposure, harm, and trust erosion to downstream churn and revenue loss. The dashed arrow shows the social-contagion feedback by which negative WOM erodes trust among users not yet directly exposed, amplifying the pipeline and accelerating regime transitions.}
+\label{fig:loop}
+\end{figure}
 
 \subsection{Tipping Points as Regulatory Indicators}
 The four tipping points operationalize qualitative regime shifts that are difficult to observe empirically but emerge clearly in simulation. Trust Collapse consistently triggers first, suggesting it could serve as an early-warning indicator. Extractive Divergence, where short-term extraction diverges from sustainable platform value, captures the economic irrationality of dark patterns and may be particularly relevant for regulatory analysis. The finding that even low-intensity deployment produces measurable, persistent harm challenges the implicit assumption that ``mild'' dark patterns are acceptable, resonating with the OECD's observation that seemingly mild dark patterns may be as effective as aggressive ones \citep{oecd2022}.
@@ -225,16 +287,28 @@ The four tipping points operationalize qualitative regime shifts that are diffic
 \subsection{Heterogeneous Vulnerability and Lock-In}
 The differential impact across user types illustrates the vulnerability dynamics described by \citet{rossi2024}. Naive users (low in digital literacy and manipulation sensitivity, high in switching costs) remain on the platform longest despite declining trust, creating a population of trapped, dissatisfied users. The users least equipped to recognize manipulation are thus most subject to prolonged exposure. Activist users, while they churn fastest, also amplify harm through social contagion before leaving: the users most capable of detecting dark patterns are also the most effective propagators of negative WOM.
 
+This dynamic has a direct welfare implication for policy. The users who suffer most are not those who leave---who exercise their exit option and escape further exposure---but those who stay because they cannot. Naive users accumulate the highest cumulative harm precisely because high switching costs trap them on a deteriorating platform. This maps directly onto \citet{rossi2024}'s finding that digital vulnerability is situational and dispositional rather than demographic: the most harmed population is not identifiable by age, income, or other standard protected-group categories, which means conventional consumer protection frameworks may be structurally blind to the harm the model reveals.
+
+A second implication is compositional. As skeptics and activists churn disproportionately, the remaining active population shifts toward naive users. This composition shift has two consequences that move in opposite directions: the volume of negative WOM falls (activists are the most prolific propagators), which may stabilize platform reputation superficially, while the depth of harm among those who remain increases. A regulator relying on aggregate complaint rates or reputation scores as proxies for platform health would observe an apparent improvement precisely when the most vulnerable users are experiencing the worst conditions---a measurement artefact with direct implications for how platform audits and consumer harm assessments should be designed.
+
 \subsection{Implications for Regulatory Policy}
-First, the non-linearity of outcomes suggests that intensity thresholds matter, so regulation that limits intensity may be more effective than binary bans. Second, the social-contagion dynamics show that dark patterns have externalities beyond the directly exposed user, strengthening the case for treating dark patterns as a public harm \citep{oecd2022}. Third, the economic analysis demonstrates that dark patterns are ultimately self-defeating: they reduce total revenue while destroying reputation, which could support ``enlightened self-interest'' arguments in industry engagement.
+First, the non-linearity of outcomes suggests that intensity thresholds matter more than binary categorization, and that regulation limiting deployment intensity may be more effective than outright bans. Even at low intensity (0.20), the model crosses two tipping points and inflicts trust damage that does not recover within the six-year horizon; at medium intensity (0.40) all four regime shifts occur. This implies that a graduated regulatory response---analogous to decibel limits in noise regulation or emission caps in environmental law---could prevent systemic harm at thresholds well below what would conventionally count as aggressive dark pattern deployment. The DSA's Article~25 prohibition operates as a binary frame (an interface either deceives or does not); the simulation evidence suggests that a tiered intensity standard would better track the actual harm curve, and that intensity monitoring, rather than incident-by-incident adjudication, is the more appropriate enforcement paradigm.
+
+Second, the social-contagion dynamics demonstrate that dark patterns impose externalities on users who are never directly exposed to them. In the model, negative WOM erodes trust among users who have had no dark-pattern contact, reducing their revenue contribution and increasing their churn risk. This contagion externality strengthens the case for treating dark patterns as a public harm \citep{oecd2022} rather than a bilateral matter between a platform and an individual user. Under a public-harm framing, the affected parties include anyone in the social graph of exposed users---a population far larger than individual-consent frameworks contemplate---and remedies may need to operate at the platform level rather than requiring consumers to identify and contest specific design choices. The standard regulatory tool of individual redress (opt-out, complaint, litigation) is structurally inadequate for harms that propagate through social networks before victims have even encountered the offending interface.
+
+Third, the economic analysis provides the basis for an ``enlightened self-interest'' argument in industry engagement and a candidate regulatory instrument. The Extractive Divergence tipping point---where short-term extraction revenue diverges from the sustainable baseline by 20\% or more---is framed in economic terms that platforms already track internally, making it a candidate for mandatory disclosure rather than a new measurement burden. Regulators could require platforms above a size threshold to compute and report this gap as a leading indicator of systemic risk, analogous to the leverage ratios used in financial supervision: a quantified warning signal that triggers enhanced scrutiny before reputational collapse occurs. We emphasize that the self-defeating dynamic is a conditional result of the modeled cost and reputation structure rather than an empirical certainty, and that calibration to specific platform economies would be required before applying it prescriptively; its robustness across the parameter ranges examined in the model is confirmed in Section~4.6.
 
 \subsection{Limitations}
-Several limitations apply. First, the model parameters are informed by literature but not fitted to empirical data; trait distributions, formula coefficients, and tipping-point thresholds are not empirically calibrated. Second, the model assumes a single platform without competition. Third, it does not capture regulatory intervention, media coverage, or legal consequences. Fourth, the network structure is static. Future work should address empirical calibration through surveys and experiments, multi-platform competition dynamics, and adaptive regulatory mechanisms.
+Several limitations apply. First, the model parameters are informed by literature but not fitted to empirical data; trait distributions, formula coefficients, and tipping-point thresholds are not empirically calibrated. Second, the model assumes a single platform without competition. This is a deliberate scoping choice that isolates trust dynamics from competitive substitution and corresponds to high-switching-cost or quasi-monopoly contexts in which churn understates user harm, since users remain only because they have nowhere to go. Introducing competing platforms would give departing users a destination and would, if anything, accelerate churn and sharpen the divergence between extraction and sustainable value; our single-platform results should therefore be read as a conservative lower bound on the churn consequences of dark patterns. Third, it does not capture regulatory intervention, media coverage, or legal consequences. Fourth, the network structure is static. Future work should address empirical calibration through surveys and experiments, multi-platform competition dynamics, and adaptive regulatory mechanisms.
 
 % =====================================================================
 \section{Conclusion}
 % =====================================================================
-This paper presented a network-based agent-based model for simulating the long-term impact of dark patterns on user trust, churn, platform reputation, and economics. Across seven scenarios, replicated over \numReplicates\ seeds, the model demonstrates that dark patterns create a self-reinforcing destruction loop: even low-intensity deployment erodes trust and triggers tipping points with little visible revenue loss, while medium and high intensities produce catastrophic user loss and economic value destruction. By shifting from static detection toward dynamic, temporal analysis of systemic consequences, and by formalizing tipping points that quantify the feedback between trust erosion, social contagion, and economic outcomes, the model provides a computational framework for reasoning about the long-term harms of deceptive design. For regulators, the key insight is that there is no ``safe'' level of dark pattern deployment; for platform operators, dark patterns are a value-destroying strategy disguised as a revenue-generating one. Future work will focus on empirical calibration, multi-platform competitive dynamics, and integration with emerging regulatory frameworks.
+Dark patterns have been studied predominantly as a detection and classification problem; this paper treats them as a systemic dynamics problem. The network-based agent-based model presented here demonstrates that the harm of dark patterns is not contained within individual moments of manipulation but propagates through social networks, accumulates in platform reputation, and eventually destabilizes the economic foundation of the platform itself. The contribution is not a point forecast of any specific platform's trajectory but a set of conditional, qualitative results---direction, ordering, and relative magnitude of effects---that hold robustly across seeds, parameters, and network topologies.
+
+The central finding is that no safe deployment level exists within the modeled regime. Even low-intensity dark patterns cross qualitative regime boundaries and inflict persistent trust damage with little visible revenue cost, making them self-defeating in a way that is invisible to managers optimizing on short-term metrics. The four formal tipping points operationalize this dynamic and, in the case of Extractive Divergence particularly, offer a candidate metric for regulatory monitoring that is grounded in platform economics rather than behavioral observation alone.
+
+Three directions for future work follow directly from the model's current scope. First, empirical calibration---connecting trait distributions and formula coefficients to longitudinal survey or experimental data---would convert the model's qualitative results into platform-specific forecasts and allow tipping-point thresholds to be grounded in observed behavioral evidence. Second, multi-platform competition would sharpen the divergence between extraction and sustainable value by giving churning users a welfare-improving exit option; the current single-platform results are a conservative lower bound on competitive consequences. Third, adaptive regulatory dynamics---incorporating media coverage events, legal penalties, and platform responses to regulatory pressure---would allow the model to evaluate the timing and form of interventions, including the graduated intensity standards and mandatory disclosure mechanisms the Discussion proposes. The open replication package released alongside this paper is designed to support exactly these extensions.
 
 % =====================================================================
 % Journal-required declarations (CRediT, competing interest, funding, GenAI).
@@ -245,7 +319,7 @@ This paper presented a network-based agent-based model for simulating the long-t
 \section*{Data and Code Availability}
 \label{sec:availability}
 % =====================================================================
-The complete source code of the model, the experiment driver (\texttt{reproduce.py}), the pinned computational environment, and all raw and processed data required to regenerate every table and figure in this article are openly available in an archived replication package (Zenodo, \texttt{<ZENODO\_DOI>}; development repository at \texttt{<GITHUB\_URL>}). The model is additionally archived in the CoMSES Net Computational Model Library. See the package \texttt{REPRODUCTION.md} for exact instructions.
+The complete source code of the model, the experiment driver (\texttt{reproduce.py}), the pinned computational environment, and all raw and processed data required to regenerate every table and figure in this article are openly available at \url{https://github.com/detinger/dark-patterns-ABM}. See the package \texttt{REPRODUCTION.md} for exact reproduction instructions.
 
 \bibliographystyle{cas-model2-names}
 \bibliography{references}

@@ -19,3 +19,7 @@ backend/results/
 .DS_Store
 
 docs/
+
+# Other
+WORK_PLAN.md
+
